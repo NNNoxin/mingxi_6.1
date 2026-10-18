@@ -16,7 +16,8 @@
     "test:integration": "turbo run test:integration --concurrency=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "pnpm format:check && turbo run lint typecheck test"
+    "verify": "pnpm format:check && turbo run lint typecheck test",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "prettier": "3.9.10",

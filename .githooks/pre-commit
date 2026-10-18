@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# 提交前门禁（CLAUDE.md §3）：格式、lint、类型检查、单元测试全部通过才允许提交。
+# 由根 package.json 的 prepare 脚本在 pnpm install 时启用（git config core.hooksPath .githooks）。
+set -eu
+if ! pnpm verify; then
+  echo "pre-commit：pnpm verify 未通过，已拒绝提交。修复后重试。" >&2
+  exit 1
+fi
