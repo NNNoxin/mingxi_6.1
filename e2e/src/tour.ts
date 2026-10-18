@@ -1,4 +1,5 @@
 import type { Page, Request } from "playwright-core";
+import { captureDomSnapshot, type DomSnapshot } from "./dom-snapshot";
 import { stableScreenshot } from "./screenshot";
 
 export interface RecordedRequest {
@@ -17,6 +18,7 @@ export interface TourStepCapture {
   path: string;
   png: Buffer;
   stable: boolean;
+  dom: DomSnapshot;
   requests: RecordedRequest[];
 }
 
@@ -28,15 +30,13 @@ function isAppRequest(request: Request): boolean {
 }
 
 /**
- * 以“交互式逐步体验”模式从第 1 步走到最后一步：每步等待导览卡片切换、页面空闲、画面稳定后截图，
- * 并记录这一步期间发出的页面与接口请求。原版和新版用同一个函数遍历，保证操作序列完全一致。
+ * 以“交互式逐步体验”模式从第 1 步走到最后一步：每步等待导览卡片切换、页面空闲、画面稳定后截图并记录 DOM 快照，
+ * 同时记录这一步期间发出的页面与接口请求。原版和新版用同一个函数遍历，保证操作序列完全一致。
  */
 export async function walkTour(
   page: Page,
   baseUrl: string,
   onStep: (capture: TourStepCapture) => Promise<void>,
-  /** 只截这些步骤（从 1 开始）；其余步骤照常推进但不等待稳定、不截图。默认全部。 */
-  onlySteps?: ReadonlySet<number>,
 ): Promise<number> {
   let pending: RecordedRequest[] = [];
   const byRequest = new Map<Request, RecordedRequest>();
@@ -81,11 +81,8 @@ export async function walkTour(
     await page.waitForFunction(() => !document.querySelector(".mx-tour-veil.on"), undefined, {
       timeout: 30_000,
     });
-    if (onlySteps && !onlySteps.has(index + 1)) {
-      if (index < total - 1) await page.locator(`${CARD} button.go`).click();
-      continue;
-    }
     const shot = await stableScreenshot(page);
+    const dom = await captureDomSnapshot(page);
     const title = (await page.locator(`${CARD} #mx-tour-title`).innerText()).trim();
     const requests = pending;
     pending = [];
@@ -96,6 +93,7 @@ export async function walkTour(
       path: new URL(page.url()).pathname,
       png: shot.png,
       stable: shot.stable,
+      dom,
       requests,
     });
     if (index < total - 1) await page.locator(`${CARD} button.go`).click();

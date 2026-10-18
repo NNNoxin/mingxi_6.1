@@ -13,11 +13,16 @@ export const CONTEXT_OPTIONS: BrowserContextOptions = {
   timezoneId: "Asia/Shanghai",
   reducedMotion: "reduce",
   colorScheme: "light",
+  // 原版生产构建会注册离线缓存 Service Worker（public/sw.js），它接管资源请求后网络回放就拦不到了；
+  // 它只负责离线缓存，不影响画面，原版与新版截图时都屏蔽。
+  serviceWorkers: "block",
 };
 
 /**
- * 固定 Chromium 的文字与图层光栅化方式。界面里有小数倍缩放的画布（逻辑画布 fitView），
- * 默认设置下文字在缩放图层上的光栅化时机不固定，同一页面两次截图会有亚像素差异。
+ * 固定 Chromium 的文字与图层光栅化方式，减少同一页面两次截图之间的亚像素差异。
+ * 仍无法消除的一处：逻辑画布 `.tld-world` 带 `will-change: transform`，Chromium 按它第一次光栅化时的缩放保留位图，
+ * 第一次光栅化落在 fitView 之前还是之后取决于帧时序，原版自己多次截图也会出现两种结果（第 39 步，约 0.18%），
+ * 对比时按原版自身的差异放宽这一步，并用 DOM 快照保证布局完全一致（见 compare.ts）。
  */
 export const CHROMIUM_ARGS = [
   "--disable-gpu",
