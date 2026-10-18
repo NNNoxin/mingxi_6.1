@@ -1,5 +1,5 @@
 {
-  "//": "路由文件原样来自基准版本，编译选项沿用基准版本（与 packages/ui 相同），只把 target 提到 ES2020：演示数据包的 64 位录制键用到 BigInt。target 只影响类型检查，产物由 Next 编译。新增代码在 src/，另由 ESLint 严格检查。",
+  "//": "路由文件原样来自基准版本，编译选项沿用基准版本（与 packages/ui 相同，含 allowImportingTsExtensions：原版代码的导入带 .ts 后缀），只把 target 提到 ES2020：演示数据包的 64 位录制键用到 BigInt。target 只影响类型检查，产物由 Next 编译。新增代码在 src/，另由 ESLint 严格检查。",
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

@@ -54,8 +54,8 @@ jobs:
           npm ci
           WRANGLER_LOG_PATH=.wrangler/wrangler.log npx vinext build
 
-      - name: 构建演示站
-        run: MINGXI_PUBLIC_URL=http://localhost:4400 pnpm --filter @mingxi/demo build
+      - name: 构建演示站（Turbo 先构建上游包，例如界面包的类型声明）
+        run: MINGXI_PUBLIC_URL=http://localhost:4400 pnpm turbo run build --filter=@mingxi/demo
 
       - name: 启动两个站点
         run: |
