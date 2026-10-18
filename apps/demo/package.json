@@ -1,0 +1,33 @@
+{
+  "name": "@mingxi/demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "演示站：明晰 demo 5 界面原样 + 回放录制数据（ScriptedDataSource），静态导出，不调用任何后端（docs/00 D1）",
+  "//": "构建用 webpack 而不是 Turbopack：界面样式 web-workbench.css 第一行用 @import 加载 Google Fonts 远程样式表，Turbopack 会丢掉这条导入（实测），webpack 与原版的 Vite 一样原样保留。",
+  "scripts": {
+    "sync-fixtures": "tsx scripts/sync-fixtures.ts",
+    "dev": "tsx scripts/sync-fixtures.ts && next dev --webpack --port 4400",
+    "build": "tsx scripts/sync-fixtures.ts && next build --webpack",
+    "serve": "tsx scripts/serve-static.ts",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mingxi/demo-data": "workspace:*",
+    "@mingxi/ui": "workspace:*",
+    "next": "16.4.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@mingxi/config": "workspace:*",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.20.5",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "10.13.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}

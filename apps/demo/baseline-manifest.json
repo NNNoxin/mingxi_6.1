@@ -1,0 +1,341 @@
+{
+  "baseline": "81f92d7",
+  "routes": [
+    {
+      "file": "app/layout.tsx",
+      "sourceSha256": "0aefeafc2fa954a4add483d86002abad83b9ceb8cb37cb94a9faa138065f4ab4",
+      "importRewrites": 3
+    },
+    {
+      "file": "app/page.tsx",
+      "sourceSha256": "dc907eeb6099468d480e74eda9e112398a9afb29589d4b28af8fcf891509ef24",
+      "importRewrites": 0
+    },
+    {
+      "file": "app/demo/page.tsx",
+      "sourceSha256": "f53dd7c62924e13e04901024c235308fcf9bd64e099415cb67eb8fefbeed84f1",
+      "importRewrites": 4
+    },
+    {
+      "file": "app/demo/phone/page.tsx",
+      "sourceSha256": "b694264dfa068f29e53365bb2ccd01fce5b9ccd54bf694bb4e40c7ea0eb8ae51",
+      "importRewrites": 1
+    },
+    {
+      "file": "app/mingxi/web/page.tsx",
+      "sourceSha256": "982682e3c18482e68c37688f023d16cbad5513d7a5cdafa622a0a9380a597379",
+      "importRewrites": 0
+    },
+    {
+      "file": "app/mingxi/web/MingxiWebClient.tsx",
+      "sourceSha256": "89244a1fd54357464020783b38346ac87c4ca7965c928cba08c51b7eb874fe04",
+      "importRewrites": 2
+    }
+  ],
+  "public": [
+    {
+      "file": "data/mingxi-media/commute-voice-transcript.txt",
+      "sha256": "51d67ed5fcab6c8fa3f509043a269b09709a395a55dfe9ff49277ff14cc1ff6f"
+    },
+    {
+      "file": "data/mingxi-media/floatball-shot.placeholder.png",
+      "sha256": "c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77"
+    },
+    {
+      "file": "data/mingxi-media/mingxi-content-outline.pptx",
+      "sha256": "24d7036661f05cf76bab8caf76a32d2f0b2403cf9047b52d20d530c20d0d055f"
+    },
+    {
+      "file": "data/mingxi-media/mingxi-spaced-repetition.docx",
+      "sha256": "cb64afe9cd7bfcd3098a3081d3ad5d1bb6879d09134ea4f444b788e5377feda0"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_IMG_4552.jpg",
+      "sha256": "d13bdb47d5a31f9eb995ca463d9a1576b97007a6222346c19b1a634070a859cc"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_IMG_6726.png",
+      "sha256": "11a5da226a5de6c5b11c35ce4795688f99cc46a81991e5661074c43127576ad7"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_IMG_6727.png",
+      "sha256": "27c7ce1a06366fb9b84399006c1d17527ca42ebd0702c12f1b2c85496bc4298a"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260604134823.png",
+      "sha256": "5ea6ba1f497503bd467b648610af2bd5b2ccda0048e597ac9ddd2b10f2e750e4"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260604161828.png",
+      "sha256": "5af061068045d36c3141130360e6b8399edfe6b27bf70b83394a0b76489fd164"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260604164632.png",
+      "sha256": "013a5c52186540d0fdc1b7ad03eead42a2b1ea0240b6b960b5d59c4a2b89c2e1"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260617143342.png",
+      "sha256": "04f783fb890dc5f4308f1a2f36d467e782405419fbbd6d965765b32a021143d8"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260618110757.png",
+      "sha256": "57f246b5d2a0cf5a4a6d20c9d79ab7ebcc6bc64545130bb5f2ccc19c4578f987"
+    },
+    {
+      "file": "data/mingxi-media/obs_img_Pasted_image_20260618110959.png",
+      "sha256": "c18351ec78a08d459c7bdbdc8fd28ac63941c3c1f43ff59de550c6ee6f6b71fd"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/csdn_157808284.md",
+      "sha256": "84adf0a3411bc073badf504fca176e75bb7c4d921a6ff133a4d64243505a3efb"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/csdn_160321127.md",
+      "sha256": "a39342752b392382ef0e1f77a1767b71d6d90ea9e03f8fc501568e7170673f96"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/csdn_161185997.md",
+      "sha256": "fe4dec4d67e3396adb345cf0d053d6997a877408692ea452d67dde92eace6cb1"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/csdn_161266269.md",
+      "sha256": "63dea6c2299b7081d74a2e5807f6002f1ad995129204423dfe601b099d2de7c8"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/csdn_162008414.md",
+      "sha256": "4c9de5d72c505bebac2f1a351e461b6ef04eea0d4bdadb59bf37e1e46b7baaba"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/docx_sr_note.txt",
+      "sha256": "14888770cce76a1aee0bff7a40e91cc61025a7900a59285c61b24bb0c0c5c642"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_00_收件箱_营业执照信息抽取_实验分析报告.md",
+      "sha256": "5a3d7c0002edbcd4a9dd2ae175ef55e666f047017e3c9aa7859e32537faf5f88"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_01_知识库_工程经验_GPU推理部署.md",
+      "sha256": "84bdb58a9135925d29deaea07fd8c5d44c88385165911517611b38094874b4c8"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_01_知识库_工程经验_SDD需求文档闭环管理.md",
+      "sha256": "e1fda5ef7ca5e913aecf1bce865d1849efeb2e43745e70375fd18b53ff7bce12"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_01_知识库_工程经验_大模型工程经验学习资源.md",
+      "sha256": "13004882227529ded03610d3087617d14f4e5287ff7d2cd9567b451b9844849c"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_01_知识库_知识图谱_超大KG.md",
+      "sha256": "fe9cbafeaaec02a4826a05b9ac6f5ba93e9fed140838107cbb71a6b3ab1e780a"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_01_知识库_知识图谱_超大KG_mindmap.md",
+      "sha256": "954c7ee4e51508ea1e9c47d6054aa6c4e943e6f410943b21b23e774dead6d235"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_02_科研_ARIS_mNGS_创新点.md",
+      "sha256": "1c8f5f10ae85cd0f77d2cbd45c74b35cd0d928e90e55aef289b091b168a54ffd"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_02_科研_ARIS_mNGS_实验记录_2026_03_09_运行结果.md",
+      "sha256": "b4f2d6b4f2911b95c062c6cd6f46a66a99ae59ddca121c8b5a5afa1c96863870"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_02_科研_ARIS_mNGS_系统设计_research_ideas_05_跳出框架的创新方向探索.md",
+      "sha256": "1880f8adb5cc9fdbbad38cc78f8eb16b7d64a84f974d8f7186a77d7c42d58436"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/obs_02_科研_RAG_纯文本RAG_SOTA总结.md",
+      "sha256": "88c3089bf2da37759dcedd46685de5d4d258ffb2ffe0315d3fca5bbe99a53648"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pdf_attention.txt",
+      "sha256": "20d35b638fa2a4693fc4195cd237b90b273b0d89d652ebbe7e4b6df4243f61f1"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_2026面向Token词元运营的大模型推理优化技术白皮书69页.txt",
+      "sha256": "1a05bc4ec3c36ebec054c013bbed2d72416d53911103988f35b23508941d5866"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_AI情报简报_2026_07_16.txt",
+      "sha256": "0356686328020a6c346bdf4f3845d5b3d24700cd8872b8fdb1e5c5f76f9d3891"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_Agent_skills技术总结综述.txt",
+      "sha256": "7fc6e5a98bd54284cde93587ea10d41e4c05d2cdb142504eb66ebe1589606636"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_Agentic_Harness_Engineering.txt",
+      "sha256": "7d04ebefba69be5d0734906b359cad32149a82f4e9eab45f1b3653d4c90c5a76"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_从0到1搭建Agent_Agent原理分析及个人助手实践_2.txt",
+      "sha256": "992888478497a02401ee5773f59864992bb1e3b2a1fdb0df6acc67861ef64e75"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_国家高质量数据集推广赋能大模型应用发展报告_PPT.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_大模型在垂直领域应用的挑战与机遇_1.txt",
+      "sha256": "da766ca7ea1b738c779699e3c518f79567aee92791aa19556df20f90bbf9accf"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_大语言模型应用中的提示泄露攻击.txt",
+      "sha256": "ee1374f653bf404a7c1a928777369d8c6b64b8a71ee23cc5178e8b0085240b67"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_模板.txt",
+      "sha256": "953b48673f206da631568b0c0fb18fc4e4aaa62fe2d239d88d9a5ec462989407"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_理解与生成一体化_统一多_模态大模型的自回归路线_1.txt",
+      "sha256": "5df91600d417a09af56148afa62ae6b9e2e818acb11d6aeaa3ea0875f6cdcb0a"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pk_面向内容风控垂直领域的_大小模型研发实践.txt",
+      "sha256": "68c8792ed0377f88d04e6a3c9e0755067c7963e22f55ef5becad32c812442437"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/pptx_outline.txt",
+      "sha256": "b09eb3acf7bec29b7c31e60b84cc6f151ff68a5126ddc81c7f4813c3a8fca61d"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/txt_voice_asr.txt",
+      "sha256": "51d67ed5fcab6c8fa3f509043a269b09709a395a55dfe9ff49277ff14cc1ff6f"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_arxiv_abs.md",
+      "sha256": "4f349bb6700c21fbe31b4be5d2593c2085e39e0d6123174f22366a4d9f5a683a"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_commonmark.md",
+      "sha256": "2659812c875a5e8b76756a2fdf94354dca0222174239a6fd1dbfa3e4cab9bb52"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_mdn_fetch.md",
+      "sha256": "56e6cca35be11a5bf34bc47ae0effea2efaadc031214ba03e504c95b26e06ef0"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_pep20.md",
+      "sha256": "a5bd30c5fb7dcae88b3e1a7f9c7a0a04612893b7fcafdce00d06ffdcfb03626e"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_pep8.md",
+      "sha256": "2fcdbac575f67a0739dc4ed18e8a159099fbc163c875cb7e8b83e2807a37623b"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_py_intro.md",
+      "sha256": "d4c24d48f357dcc1bf158232b9ca9c2f0b0576b2474447c45bb98b88aa5f4e1a"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_rfc8259.md",
+      "sha256": "1c923e09cba8f01c3cd98a85703605609f7fce62ff92ba020d548a900a837a63"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/web_wiki_sr_zh.md",
+      "sha256": "2b5042adaa9511fe5c73d0c576b5d3fddb2b906a792900c2a3fec1e748b89280"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/xhs_shot_agent_eval_comment.md",
+      "sha256": "937544221372aeb7ac2d9e039336f49342faea12cc3e7f13b1040d5fd513df41"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/xhs_shot_ai_pm_eval_anxiety.md",
+      "sha256": "0ea4cbb6231409bdc89143c04b94ed22f11b042aea8baf599a12f9743cfa8cde"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/xhs_shot_eval_dirty_work.md",
+      "sha256": "9fb407972e6b0693a62096334596299e8c94814c8b8398188fd0a77e065c29e4"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/xhs_shot_quantiv_gpt_workflow.md",
+      "sha256": "04e5f8cda955a3995992511cba9d3f5c359d3a4b2f323c87956913b2d387fd8f"
+    },
+    {
+      "file": "data/mingxi-media/snapshots/xhs_shot_rag_bm25_insight.md",
+      "sha256": "f8d1837a16927168cdeeb2afc35c00f40350bb9e583ea778b534313251baf596"
+    },
+    {
+      "file": "data/mingxi-media/xhs_ai_pm_eval_anxiety.png",
+      "sha256": "5d341e8f0755698219d34dea886186aa4f899061edd0ae3b07fcb12c3bac1b52"
+    },
+    {
+      "file": "data/mingxi-media/xhs_comment_agent_eval.png",
+      "sha256": "62b6a4d3b35e52113798d715da1aa7e717afefae5252772c810d447eddc3307a"
+    },
+    {
+      "file": "data/mingxi-media/xhs_comment_eval_dirty_work.png",
+      "sha256": "17f36244e7bb39260671a4372491bf4f8ae0f50c75a875503a12f9470c2ded40"
+    },
+    {
+      "file": "data/mingxi-media/xhs_quantiv_workflow_title.png",
+      "sha256": "c60db8916b663a2eef51d5e437c76209a13bc383ffbf53aaa53feb9f9f12dd41"
+    },
+    {
+      "file": "data/mingxi-media/xhs_rag_bm25_insight.png",
+      "sha256": "6799ff83c6f1329a863fccecb96f67148fbb13665d28e9fced1eb255b0750c93"
+    },
+    {
+      "file": "data/mingxi-silver-library.json",
+      "sha256": "4b14853855e7f7181eace9bbf3c8ad6d477627589fa09a640dfa16f82ae50b4b"
+    },
+    {
+      "file": "data/mingxi-think-samples.json",
+      "sha256": "45a2b5c06f4e2941e801a988a97021cd3959ce3715808448e4061c391bf76aee"
+    },
+    {
+      "file": "demo-phone/attention-is-all-you-need.pdf",
+      "sha256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697"
+    },
+    {
+      "file": "demo-phone/bili-hot.png",
+      "sha256": "773a4fc71ce8b9be575afad897d4978c230cb9f39fbbe0a519fbbfd21a634905"
+    },
+    {
+      "file": "demo-phone/bili-video.png",
+      "sha256": "61345e68d00b2db2d999a37617ac10beb4c69f625df3f3854be82936346f7156"
+    },
+    {
+      "file": "demo-phone/library.png",
+      "sha256": "34b0c01d96ef331b3b0225c53b51df6fc6864e12523b1ab534688f1f1fece9ab"
+    },
+    {
+      "file": "demo-phone/xhs-feed.png",
+      "sha256": "94fc6cecc01d1641c980c0b20af1b88b07ab339525442b53b391f08e72c65f39"
+    },
+    {
+      "file": "demo-phone/xhs-post-design.png",
+      "sha256": "56de7542991e13b1963f4038e8ddfa8f0b68c1a68933ae236064e0c5a7554d7f"
+    },
+    {
+      "file": "demo-phone/xhs-post.png",
+      "sha256": "a93e12550ad8b8f1012ec676fa7ad373473e2fc6034516060fa64f20e355e9f7"
+    },
+    {
+      "file": "demo/README.md",
+      "sha256": "47b749fa2ed7aacd144ff3fd43490f14cbdc70fd0af408622bcf7599970d0d06"
+    },
+    {
+      "file": "demo/mingxi-product-demo.html",
+      "sha256": "3824a68d78a60ded664b9e9299ab8b45cd915773ef967bea345388e546604781"
+    },
+    {
+      "file": "favicon.svg",
+      "sha256": "e6d2e59b7b5bbb0342e0fb496dfc262decbfe4426bbb7b047aec8d467d1dc6f7"
+    },
+    {
+      "file": "mindtrace-icon.svg",
+      "sha256": "f0ecd366927263abcec510e49fff73eae44bb0d87b367c1511ad053dc01f27e8"
+    },
+    {
+      "file": "mingxi-demo-5-og.png",
+      "sha256": "773f88d5e31079dc8ecd5b4241433d7441157362f7316cb3eb4be4d192aa57aa"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "de4cdba7750ff14c7299afbd29753a0662a17ef19db90fdc609673b52fde8ef3"
+    }
+  ]
+}

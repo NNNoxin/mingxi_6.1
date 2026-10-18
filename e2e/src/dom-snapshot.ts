@@ -5,7 +5,8 @@ import type { Page } from "playwright-core";
  * 内联样式、位置尺寸、滚动位置（SVG 元素再加全部属性，例如连线的 d）。
  * 像素对比对个别步骤需要按原版自身的光栅化波动放宽，这份快照要求原版与新版逐项完全相同，
  * 保证放宽的只是光栅化噪声，不会放过文字、结构、布局上的任何差异。
- * 框架自己插入、与界面无关的节点（脚本、样式、路由播报器等）不计入。
+ * 框架自己插入、与界面无关的节点不计入：脚本、样式、路由播报器，以及 Next App Router 在 body 开头插入的
+ * 元数据占位 `<div hidden><!--$--><!--/$--></div>`（只认 body 直接子级、带 hidden、没有子元素也没有文字的 div）。
  */
 export interface DomNode {
   /** 层级深度 */
@@ -43,6 +44,15 @@ const SNAPSHOT_SCRIPT = `(() => {
   const walk = (parent, depth) => {
     for (const element of parent.children) {
       if (SKIP.has(element.tagName.toUpperCase())) continue;
+      if (
+        parent === document.body &&
+        element.tagName === "DIV" &&
+        element.hasAttribute("hidden") &&
+        element.childElementCount === 0 &&
+        !(element.textContent ?? "").trim()
+      ) {
+        continue;
+      }
       const rect = element.getBoundingClientRect();
       const node = {
         d: depth,

@@ -1,0 +1,855 @@
+https://hjfy.top/arxiv/2605.07358
+     JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                      1
+
+
+
+
+          智能体技能综合调查：分类、技术与应用
+              Yingli Zhou, Shu Wang, Yaodong Su, Wenchuan Du, Yixiang Fang Member, IEEE, Xuemin
+                                                         Lin Fellow, IEEE
+                                       The Chinese University of Hong Kong, Shenzhen
+                 yinglizhou@link.cuhk.edu.cn; shuwang3@link.cuhk.edu.cn; yaodongsu@link.cuhk.edu.cn;
+                          doorvant@gmail.com; fangyixiang@cuhk.edu.cn; linxuemin@cuhk.edu.cn;
+
+
+
+
+         摘要—基于大语言模型（LLM）的智能体通过工具、记忆                                 [11] 这样的协议层。然而，实践经验表明，仅仅拥有对
+     和结构化交互进行推理、规划与行动，正逐渐成为自动化复杂工                                   工具的访问权限，并不能决定何时调用某项能力、如何
+     作流的一种有前景范式。近期系统如 OpenClaw 与 Claude
+                                                                    协调多个工具、如何处理失败情况，或如何验证输出结
+     Code 体现了从被动响应生成向以动作为导向的任务执行的更
+                                                                    果。当任务变得更具长期性和异质性时，若要求智能体
+     广泛转变。然而，随着智能体迈向开放式的现实世界部署，对每
+     个任务都依赖从零开始的推理和底层工具调用的做法，正变得日
+                                                                    为每个任务从头推导这些过程步骤，将导致严重的脆弱
+     益低效、易出错且难以维护。                                                  性、高延迟和不可靠性。这一“过程性鸿沟”已演变为
+         本综述从 智能体技能的视角审视这一挑战，我们将技能定                                 一个主要瓶颈。
+     义为可复用的过程性产物，在特定任务约束下协调工具、记忆与
+                                                                      这一差距促使我们从根本上转向以技能为中心的
+     运行时上下文。在此视角下，智能体与技能扮演互补角色：智能
+     体负责高层推理与规划，而技能构成实现可靠、可复用、可组合
+                                                                    智能体系统视角。在本综述中，我们将智能体技能定义
+     执行的操作层。因此，技能是现代智能体系统可扩展性、鲁棒性                                   为可复用的过程性知识单元，用于编码在具体约束条件
+     与可维护性的核心。                                                      下协调工具、记忆和运行时上下文的特定“如何操作”
+         我们围绕智能体技能生命周期的四个阶段——表示、获取、 知识 [12]–[14]。在此框架下，智能体与技能形成高度协
+     检索与演化——组织文献，并分别回顾各阶段的代表性方法、生                                   同的层次化关系：智能体作为高层认知规划者，负责意
+     态资源及应用情景。最后，我们讨论了在质量控制、互操作性、
+                                                                    图解析与目标分解；而技能则构成关键的操作层，将这
+     安全更新以及长期能力管理方面的开放性挑战。所有相关资源，
+     包括研究论文、开源数据与项目，均已整理并汇总于 https:
+                                                                    些抽象计划转化为稳健的底层执行。技能的重要性在于
+     //github.com/JayLZhou/Awesome-Agent-Skills，供社                  其作为智能体的“肌肉记忆”。通过将过程性知识外化
+     区共享使用。                                                         为可复用的实体，技能使智能体能够跳过冗余的逐步推
+                                                                    理，大幅降低执行错误，并将瞬时动作转变为易于检索、
+
+                               I. 引言                                组合、修改和管理的持久能力，从而在重复任务中实现
+                                                                    高效运作。
+          基于大语言模型（LLM）的智能体正作为一种强大
+     的范式，用于自动化复杂任务。从根本上说，基于 LLM                                       更广泛地说，将经验积累为可复用的技能是人类学
+     的智能体是一个自主系统，它利用 LLM 作为其认知引                                     习中一个长期存在的模式。人们并非从头开始解决每一
+     擎，以感知环境、理解任务上下文、对抽象目标进行推                                       个任务；而是逐步将重复练习、示范、失败以及专家指
+     理，并通过规划、工具使用、记忆检索和结构化交互来                                       导转化为可复用的程序。如图 1 所示，这一外化过程可
+     执行动作 [1]–[6]。近期开创性的系统，如 OpenClaw [7]、 被视为一条从具身技艺知识，到编码化的工程流程，再
+     Manus [8] 和 Claude Code [9]，生动地体现了这一范式， 到数字工具和可编程工作流，如今发展为智能体原生技
+     标志着智能系统从被动响应生成向主动、以行动为导向                                       能生态系统的漫长轨迹。
+     的任务执行的更广泛转变。                                                     在这一背景下，近期的大语言模型时代已将技能导
+          随着基于大语言模型的智能体被部署在越来越多                                     向型智能体转变为一个快速发展的研究领域。图 2 展示
+     的场景中，并承担日益复杂的任务，工具增强已成为核                                       了从 2023 年 4 月到 2026 年 4 月代表性论文的快速增
+     心设计原则，这得益于 API、插件以及诸如 MCP [10],                                长趋势。与此同时，相关进展在多个方向上呈现碎片化：
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                      2
+
+
+
+
+图 1: 技能的历史演化，从依赖身体的人类生存与手工技艺，到工程、工业、数字时代以及智能体时代的技能体
+系。
+
+
+从人类专长、迹、任务和语料库中获取技能 [12]–[14]；                                   本文其余部分组织如下。第 II 节介绍核心概念和
+从大规模且异构的技能库中检索技能 [15]–[17]；在状态                                 形式化预备知识。第 III 节展示本综述中使用的技能分
+与预算约束下进行运行时选择与组合 [5], [6], [18]；以                              类体系。第 IV、V 和 VI 节分别讨论技能获取、检索与
+及部署后的修订、演化与治理 [19], [20]。这种碎片化促                                演化。第 X 节讨论相关工作。最后，第 VIII 和 XI 节
+使对智能体技能及技能导向型智能体生态系统的聚焦                                        概述未来研究方向并总结全文。
+且系统性的综述成为必要。
+      为满足这一需求，本综述对智能体技能及以技能为                                                 II. 初步研究
+中心的大型语言模型智能体生态系统进行了聚焦且系                                          在本节中，我们介绍了以技能为中心的大型语言模
+统性的回顾。我们围绕四个生命周期模块展开文献梳                                        型智能体生态系统的核心预备知识，包括基于大型语言
+理：技能表示、技能获取、技能检索和技能演化。除了                                       模型的智能体、过程差距、从工具到技能的转移，以及
+方法分类之外，我们还回顾了具有代表性的生态系统资                                       本调查中使用的生命周期分类法。
+源、应用场景，并综合分析了在质量控制、安全、成本、
+互操作性、维护以及长期能力治理方面面临的开放性挑                                       A. 基于大语言模型的智能体
+战。
+                                                                 基于语言模型的智能体是一种系统，它以语言模型
+      综上所述，本次调查作出了以下贡献：                                        作为核心推理引擎，通过与环境的迭代交互自主完成多
+  •   我们识别出智能体技能是现代大语言模型智能体生                                   步骤任务 [4], [18], [20]。其运行遵循感知–推理–动作环：
+      态系统中的基础组成部分，明确刻画了其与智能体
+                                                                        ot → rt → at → ot+1 ,   (1)
+      之间的关系，并阐明了其在弥合原始工具访问与稳
+      健任务执行之间过程鸿沟中的关键作用。                                       其中，ot 为当前观测，rt 为推理状态，at 为产生的动
+  •   我们围绕智能体技能的四个核心生命周期阶段——                                   作。近期的系统如 OpenClaw 和 Manus 体现了从被动
+      技能表示、技能获取、技能检索和技能演化——组                                   响应生成向以行动为导向的执行转变的趋势 [7], [8]。现
+      织了现有研究，并回顾了各阶段内的代表性方法。                                   代智能体与独立的大模型之间的区别在于，它们能够进
+  •   我们总结了具有代表性的智能体技能平台、应用场                                   行 行动：查询外部系统、调用工具、编写并执行代码，
+      景以及开放性挑战。                                                以及与其他智能体进行协调 [5], [6], [21]。这种行动能
+  •   我们概述了智能体技能的有前景的研究方向。                                     力是本综述所研究能力栈的基础。
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                         3
+
+
+
+
+图 2: 2023 年 4 月至 2026 年 4 月期间关于智能体技能研究的增长情况。图中展示了代表性论文的累计数量及示
+例系统。
+
+
+B. 智能体知识与过程鸿沟                                                  够，智能体还需要可重复使用的程序化工具来指导这些
+     智能体的行为不仅取决于基础模型的推理能力，还                                    能力在具体情境中的协调使用时，技能增强的智能体便
+取决于智能体必须采取行动时可获取的知识。在此，我                                       应运而生。
+们通过区分被动知识和主动知识，来明确智能体技能在                                          诸如搜索引擎、代码解释器、数据库和领域特定
+能力层级中的位置。                                                      API 等工具，将智能体的能力远远扩展至仅依赖参数化
+     被 动 知 识 通 过 预 训 练、 监 督 微 调 以 及 诸 如                        记忆的范围之外 [11], [21], [22], [108]。诸如模型上下文
+RLHF [1]–[3] 的对齐过程，在模型部署前被吸收进模型                                协议（MCP）之类的标准通过为异构提供者之间的发现
+参数中。它包括事实关联，以及如指令遵循、分解、代                                       和调用提供统一机制，进一步降低了集成的摩擦 [10]。
+码或计划生成等广泛的过程先验。这些先验支持通用推                                       实际上，MCP 使得智能体更易于“访问”外部能力。
+理，但它们保持静态、不透明，并且在专业或快速变化                                          但访问本身并不会带来可靠的行为。一个工具暴露
+的领域中往往较弱。                                                      了一个原子能力：它指定了可以做什么，而不是应该
+     主动知识是在运行时通过与环境的交互获得                                       如何使用。搜索工具不会说明何时搜索优于记忆检索；
+的 [15], [21], [22]。它包括检索文档、调用 API 和工                           API 工具不会说明模式变更时应采取什么措施；代码解
+具、访问 MCP 服务器、执行外部化智能体技能以及观                                     释器也不会说明输出应如何验证。MCP 及类似基础设
+察结果。主动知识比参数化知识更具动态性和现实基                                        施解决的是互操作性问题，而非将多个工具调用转化为
+础，但仅具备访问权限并不能决定何时应使用、如何与                                       稳健工作流的过程性问题。随着任务复杂性的增加，这
+其他能力进行序列化、如何验证其输出，或应使用什么。 种编排负担仍然会回到推理时的 LLM 身上，成为脆弱
+  为弥合这一过程性差距，智能体将过程性知识封装 性的主要来源 [4], [19]。这一差距通过引入可重用的过
+成可重复使用的过程性成果，这些成果可在不同任务间                                       程性构件来解决，这些构件明确了外部能力应何时以及
+存储、检索、修改和管理。因此，本文的其余部分将重                                       如何应用。
+点放在这一活跃的过程层，而非智能体知识的整体。
+                                                               D. 技能：定义与形式化
+
+C. 从工具技能到智能体技能                                                    与其将工具调用视为孤立的操作，系统会将成功的
+                                                               程序存储并作为显式的技能进行重用。
+     主动大模型系统的演化可被视为从工具增强向技
+能增强的转变。工具增强的智能体使外部能力得以大规                                       Definition 1 (Agent Skill). 一种技能是一种具有有限
+模实际应用；而当研究人员意识到仅具备能力访问还不                                       作用范围的可复用过程性构件，用于外化以任务为中心
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                                                                              4
+
+
+                                                                 Re exion [19], ExpeL [23], BoT [24], ReasoningBank [25], AWM [26], Trace2Skill [27], SayCan [28] , DEPS [29] ,
+                                            Text-Based           Generative Agents [30], GITM [31], RAP [32], Retroformer [33], MemGPT [34], TiM [35], Self-Discover [36],
+                                                                 TextGrad [37], FINCON [38], M+ [39], Learned Memory Bank [40], Nemori [41], Intrinsic Memory [42], SkillForge [43]
+
+                Skill Representation                             Voyager [12], SkillCraft [44], PolySkill [45], ASI [46], CUA-Skill [47], MetaGPT [6], Eureka [48], DS-Agent [49],
+                (§III)                      Code-Backed
+                                                                 LDB [50], CodeAct [51], SWE-agent [52], ToolCoder [53], PSN [54]
+
+                                                                 JARVIS-1 [55], Synapse [56], SkillWeaver [57], AgentSkillOS [58], TPTU [59], talker-reasoner [60], DAMCS [61],
+                                            Hybrid-Based
+                                                                 GraphSkill [62], Alita [63]
+
+                                            Human-Derived          SkillNet [64], AgentSkillOS [58], Agentic Skills [65], SkillOS [66], Agent Hospital [67]
+
+                                                                   Voyager [12], SkillCraft [44], Re exion [19], ExpeL [23], BoT [24], Trace2Skill [27], EverMemOS [68], HyperMem [69],
+                                                                   AWM [26], Synapse [56], PolySkill [45], GITM [31], Retroformer [33], MemGPT [34], Eureka [48], TiM [35], M+ [39],
+                                            Experience-Derived
+                                                                   Learned Memory Bank [40], G-Memory [70], Nemori [41], AgentEvolver [71], STULIFE [72], AutoRe ne [73],
+                Skill Acquisition
+                                                                   ProcMEM [43], SkillForge [43]
+                (§IV)
+                                                                   CREATOR [14], ToolMakers [13], Cradle [74], CodeAct [51], SkillWeaver [57], SayCan [28], ReAct [4], DEPS [29],
+                                            Task-Derived
+                                                                   RAP [32], MetaGPT [6], Self-Discover [36], LDB [50], SWE-agent [52], Alita [63]
+
+                                                                   AppAgent [75], AutoGuide [76], HuggingGPT [5], ToolLLM [22], WebArena [77], TPTU [59], ToolCoder [53],
+                                            Corpus-Derived
+                                                                   DS-Agent [49], Corpus2Skill [78], AgentDistill [79]
+
+                                                     Dense Embedding           Voyager [12], SAGE [80], AutoSkill [81], MemSkill [82], ExpeL [23], ReasoningBank [83], DS-Agent [49]
+
+
+ Agent Skills
+                                                     Sparse & Keyword          SAGE [80], SkillWeaver [84], AutoSkill [81], Memento-Skills [85], SkillNet [64]
+                                    Skill
+                                                     Generative Retrieval      ToolGen [86], ToolLLM [22]
+                                    Retrieval
+
+                                                                                                       SkillRL [87], AgentSkillOS [58], TOOL-PLANNER [88], SkillNet [64], GraphSkill [62],
+                                                                               Hierarchical
+                                                                                                       MemGPT [34], G-Memory [70], Corpus2Skill [78]
+                                                     Structure-Aware
+                Retrieval &
+                                                                               Dependency Graph        SkillWeaver [84], CUA-Skill [47], ToolExpNet [89], PSN [54]
+                Selection (§V)
+
+                                                     Context-Aware             AutoGuide [76], MemSkill [82], Memento-Skills [85], ToolMem [90], PlugMem [91]
+
+                                                     Skill Composition         SkillWeaver [84], AWM [92], ASI [46], AgentSkillOS [58], CUA-Skill [47], HuggingGPT [5], Self-Discover [36]
+                                    Skill
+                                    Selection
+                                                     Cost&Utility-Aware        MemSkill [82], Memento-Skills [85], SkillOrchestra [93], SkillsBench [94]
+
+                                                     Feedback-Driven           SkillRL [87], CUA-Skill [47], ToolExpNet [89], ExpeL [95], SMART [96]
+
+                                        Skill Revision       EvoSkill [97], Memento-Skills [85], AutoSkill [81], XSkill [98]
+
+                                       Skill Validation      SkillWeaver [84], ASI [99], TroVE [100], PSN [54], Audited Skill-Graph [101]
+                Skill
+                Evolution              Policy Coupling       SkillRL [87], ARISE [102]
+                (§4)
+                                    Repository Evolution         Uni-Skill [103], SkillX [104], SkillNet [64], SkillClaw [105]
+
+                                    Runtime Governance           SkillRouter [106], PoisonedSkills [107]
+
+
+                                                                    图 3: 本调查中智能体技能的分类体系。
+
+
+的专业知识：不仅包括能做什么，还包括何时行动、如                                                                               能完成的任务扩展至超出 M 单独所能实现的范围 [27]；
+何执行、哪些启发式方法和失败模式是重要的，以及如                                                                               而 C 则编码了该技能应被检索和应用的适用性条件，以
+何判断任务完成 [25], [27]。形式上，一个技能被建模为                                                                        元数据、自然语言描述或嵌入形式表达 [12], [13], [109]。
+一个元组                                                                                                   该元组在每个系统中无需完全实例化，但能够捕捉过程
+                                                                                                       性知识如何成为一种显式、可检查的对象，从而适用于
+                                     S = (M, R, C),
+                                                                                                       存储、检索与编排。
+其中，M 是智能体可以加载并遵循的根指令文档；R =
+{r1 , . . . , rK } 是一组辅助资源——参考文档、可重用模                                                                          这些组件共同将任务导向的知识外化：不仅包括可
+板、可执行脚本或领域专用资源，这些资源将该技能所                                                                               以做什么，还包括何时行动、如何执行、哪些启发式方
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                              5
+
+
+
+
+                                                 图 4: 智能体技能的示例。
+
+
+                 表 I: 代表性智能体-技能平台。                             E. 智能体技能生态系统
+
+     Platform                   Scale             Web
+                                                                 智能体系统应被视为生态系统，而非孤立的推理模
+                                                               块。技能可通过示范、迹、文档或反馈生成；存入资源
+     SkillNet                   300k+
+                                                               库并按任务、延迟或预算约束进行检索与选择；在工具、
+     ClawHub                    40k+
+                                                               记忆及其他智能体的协助下执行；随着环境变化，后续
+     SkillHub                   80k+
+                                                               还可进行修订、验证或退役。由于这些阶段紧密耦合，
+     SkillsMP                   700k+
+                                                               错误可能在整个生命周期中传播：不完整的技能更难被
+     Skills.sh                  90k+
+                                                               检索，弱检索信号可能触发不合适的流程，过时的依赖
+                                                               关系则可能导致原本有效的行为失效。
+                                                                 在接下来的部分中，我们将从该生态系统的生命周
+                                                               期视角回顾每个核心模块。如图 3 所示，我们的分类体
+法和故障模式至关重要，以及如何判断进展与完成。该
+                                                               系从这一生命周期角度组织了现有研究。
+元组在每个系统中无需完全实例化，但能够捕捉过程
+性知识如何成为一种显式的、部分可检查的对象，适用
+                                                                         III. 技能表示
+于存储、检索和编排。在实践中，智能体技能正越来越
+                                                                 基于第 II 节，我们对智能体技能在实践中如何被
+多地通过专用平台进行管理，例如 SkillNet、ClawHub、
+                                                               封装进行分类。每项技能由基于指令的主文档 M 、可
+SkillHub、SkillsMP 和 Skills.sh（表 I）。
+                                                               选的辅助资源 R 以及触发条件 C 组成。语义上，技能
+     技能与原始工具和 MCP 服务器的不同之处在于， 将过程性知识外化，包括操作结构、分支启发式方法以
+它们编码了情境化的过程性知识（触发条件、顺序安                                        及范数约束 [111]，其中 M 作为主要的人类可读表示。
+排、备用方案、潜在陷阱），并表现为有边界、可复用                                       尽管 M may 可能采取不同形式，如简要提醒、检查清
+的实体，可以被加载、检查、共享和修订，而不会变成                                       单、标准操作程序（SOP）或更详细的流程，但这些差
+无法区分的手册——这一约束在库规模扩大时尤为重                                        异对我们的分类体系而言是次要的。系统间更为关键的
+要 [12], [13], [25], [27], [58], [110]。它们不必以工具为                 区别在于 R 的配置方式。
+中心：认知技能（例如，审查清单、分析工作流）主要                                         然而，在实践中，M 和 C 经常不足以单独使用。许
+依赖内部知识，但仍能提供超出临时提示的结构与复用                                       多技能依赖于辅助资源 R 来提供领域参考、可重用的
+性。工具暴露操作；而技能则封装了在具体情境中使用                                       成果或可执行的支持，从而扩展了仅凭 M 本身所能完
+这些工具的知识。                                                       成的任务范围。
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                 6
+
+
+
+
+A. 资源配置分类法                                                     ¸ 任务衍生获取和¹ 语料库衍生获取。人类衍生获取
+  我们根据 R 中资源的类型，将技能分为三种配置： 直接从专家知识和人工整理中获得技能。经验衍生获取
+基于文本的、基于代码的以及混合型。          基于轨迹、范例或过往执行过程构建技能。任务衍生获
+     1) 基于文本的技能: R 由文本型资料组成，例如                                 取根据当前任务的需求按需构建技能。语料库衍生获取
+参考文献、示例、模板、评分标准或模式。这些资源在                                       则从外部文本或结构化语料库（如文档、代码仓库和界
+不引入可执行依赖项的情况下提升基础性与复用性。                                        面迹）中提取技能。图 5 总结了这一更广泛的格局，为
+     2) 代码支持的技能: R 由可执行的制品组成，例                                 下文更为聚焦的讨论提供了背景。
+如脚本、辅助函数、笔记本或包装器 [12], [13]。这使得
+重复性子任务和更强的操作确定性成为可能，但也把软                                       A. 人类来源的获取
+件打包引入了技能生命周期：版本控制、测试和依赖管                                            人类获取方式通过领域专家直接获得技能。在此类
+理都变成了持续的成本。                                                    方法中，人们显式地编写可重用的程序，定义其预期范
+     3) 混合资源技能: R 将文本和可执行的产物 [10],                             围，并在需要时附加支持材料或使用约束。
+[27] 结合，旨在保持可解释性的同时支持确定性执行。                                         通过反复实践，他们积累了隐性知识、异常处理策
+此处的协调负担最高，因为必须在文档、代码及其绑定                                       略和情境敏感的判断力，这些可以被外化为可重复使用
+之间保持一致性。                                                       的能力。例如，医生可能将诊断经验总结为治疗流程、
+     示例。图 4 展示了在不同任务场景下智能体技能的                                  用药处方和药物特异性使用指南；工程师可能将故障排
+四个代表性例子。每项技能均被组织为一个可重用的流                                       查工作流和操作手册编码化；政策专家则可能将评审标
+程，包含多个步骤，每个步骤可能涉及推理、工具调用                                       准和安全约束形式化。通过这种方式，人类获取的知识
+或与外部资源的交互。例如，文献综述技能会查询论文                                       得以转化为明确的程序化成果，智能体可以对其进行检
+数据库，按主题对论文进行分组，提取核心方法，并生                                       查、复用和调整。
+成基于引用支持的总结。代码修复技能则检查失败的日                                            讨论. 人类编写的技能获取存在明显的权衡。其优
+志，定位错误，提出补丁，运行测试，并根据执行反馈                                       势在于准确率：专家能够以精细的语义控制编码隐性判
+迭代修订修复方案。类似地，旅行规划和异常调查展示                                       断、行业惯例以及安全关键规则。其劣势在于可扩展性，
+了技能如何协调并行的工具调用，满足用户约束，比较                                       因为人工整理过程缓慢且难以持续维护；在实践中，由
+证据，并生成可操作的输出。                                                  人类提供的技能通常作为更自动化获取方法的种子层。
+                                                                    图 6 展示了基于 SkillsMP (https://skillsmp.com/)
+B. 比较与总结                                                       统计量的近期技能增长与多样化趋势。这一趋势反映了
+     三种配置的差异不在于 M 的存在与否，而在于其                                   逐渐转变：越来越多由领域专家设计的技能被整合进智
+周围的上下文。基于文本的资源有助于提升理解；基于                                       能体平台，如表 I 所总结。这种扩展显著提升了智能体
+代码的资源有助于提高执行可靠性；混合配置则在增加                                       执行专业化、领域特定任务的能力。
+复杂度的前提下同时追求两者。退化情形——几乎空的
+R ——将全部负担交由 M 单独承担。在生态系统层面， B. 经验获取
+这一分类体系决定了技能如何被索引、验证、维护和编                                         基于经验的获取将智能体过去的运行过程——执
+排 [58]，同时为轻量级提醒、工作流包以及附带代码和                                    行迹、范例、交互历史和反馈——视为原始素材，从中
+参考信息的丰富技能提供了统一的描述。                                             抽象出重复出现的模式（包括失败）
+                                                                              ，转化为可重用、可
+                                                               迁移的技能，而非仅将其作为短暂记忆留存。这契合了
+                       IV. 技能获取                                人们熟悉的认知直觉——汲取经验，提炼方法，目前也
+     技能获取是指构建或生成新技能的过程。在实践                                     是研究最为深入、具体机制与系统应用最广泛的获取类
+中，这意味着获得可重复使用的程序性指导或可执行的                                       别。
+技能成果。                                                            区分各类方法的主要因素并非经验的来源——通
+     从宏观层面来看，文献可依据技能获取的主要直接                                    常为先前运行所产生的迹、日志和反馈——而在于这些
+来源划分为四类：¶ 人类衍生获取、· 经验衍生获取、 材料在固化为技能之前如何被处理。具体而言，系统可
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                                                                                                       7
+
+
+
+
+                    Human Expertise and Manual Authoring                                                       Trajectory Distillation                          Memory-Mediated Distillation
+
+
+
+                                                                                        Candidate                           Summarize                                             Memory        Abstract reusable
+    Human Experts                            Domain         Write /Curate / Specify                     Execution trace                        Lesson
+                                                                                          skills                                                               Traces           organization      knowledge
+                                            Knowledge
+
+
+                    Explicit Skill Construction and Reuse                                                         Workflow Induction                             Executable Skill Induction
+
+
+
+     Candidate                              Reusable                                     Reuse            Repeated           Induced            Reusable      Successful        Package
+                                                                                                                                                                                                 Skill artifacts
+       skills                                artifact              Store                 skills           executions         workflow           procedure     interaction
+
+
+                    Human-Derived Skill Acquisition                                                                       Experience-Derived Skill Acquisition
+
+         Task-Conditioned Generation and Validation                                                                       External Corpora                        Extraction and Induction
+
+
+
+                                                                                      Success/failure                                                                                Extract          Candidate
+     Current task      LLM generation     Candidate skill     Execute on task                                                                                 Source material
+                                                                                          signal                                         Available material                                           knowledge
+
+
+                                        Refine and Reuse                                                               Skill Construction                            Refinement and Filtering
+
+
+                                                                                                                                                              Candidate                            Constructed
+                                                                                                          Candidate                           Candidate
+    Success/failure                                                                                                          Normalize                          Skills          Revise/filter         skill
+                        Revise/filter    Improved skills          Acton                Future tasks       knowledge                             Skills
+        signal
+
+
+                      Task-Derived Skill Acquisition                                                                            Corpus-Derived Skill Acquisition
+
+                                                                                       图 5: 技能获取方法概述。
+
+
+选择并保留成功的回合作为可复用的范例；将长序列抽                                                                                        第二个操作是总结与抽象。在此过程中，具体的迹
+象为紧凑的教程、启发式规则或陈述性指导；将零散的                                                                                被压缩为可复用的程序性知识，例如经验教训、启发式
+证据组织成跨任务可迁移的结构化记忆；或将提炼出的                                                                                规则、指导方针或描述性技能描述。Re exion 从失败
+知识打包为更丰富的成果，如工作流、API 或可执行模                                                                              尝试中提取语言化反思，将特定错误转化为供未来使
+块。从这一视角看，基于经验的学习是一个从执行迹到                                                                                用的简短纠正规则 [19]。ExpeL 则超越了单迹反思，从
+技能成果的流水线过程，其间经过经验处理操作（选择、 累积的成功与失败中抽象出更高层次的经验教训 [23]。
+抽象/概括、记忆组织以及程序化封装）
+                 。这些步骤很少                                                                                FINCON 将先前金融决策回合中提炼出的管理层级洞
+孤立存在：一条流水线通常会串联多个步骤。本节余下                                                                                见存储为可复用的指导，而“思维缓冲区”（Bu er of
+部分将逐一介绍每项操作。                                                                                            Thoughts）则将先前的问题求解经验提炼为可复用的
+                                                                                                        推理模板，并可在新任务中实例化 [24], [38]。Think-in-
+     一个常见的初始操作是选择。由于并非所有经验                                                                              Memory（TIM）同样利用事后思考提取可复用的自然
+对技能构建都同样有用，系统通常会首先过滤历史轨  语言经验；Trace2Skill 则进一步推进该方向，通过分层
+迹，仅保留那些成功、有信息量或具有代表性的情况。 整合局部轨迹层级的经验教训，生成显式的、可复用的
+Voyager 是一个正则的例子：它保留成功的具身轨迹， 技能人工制品 [27], [35]。在这些方法中，共通模式在于：
+并以此作为后续可执行技能构建的基础 [12]。SkillCraft                                                                       回合级执行过程并非以完整细节形式保存，而是被压缩
+在工具使用情景中遵循类似的模式，即在将工具轨迹                                                                                 为更紧凑的知识单元，从而更易于检索与复用。
+进一步抽象为可执行技能之前，先选择有用的工具轨
+迹 [44]。从这个意义上说，选择起到了经验质量控制阶                                                                                     第三种操作是记忆组织。与将每条轨迹独立处理
+段的作用：它决定了执行历史中的哪些部分成为可重复                                                                                不同，某些方法将累积的经验重新组织为更具持久性
+使用的原始材料，而失败或嘈杂的迹线则被丢弃，或作                                                                                和结构化的记忆形式。Think-in-Memory 将反思融入记
+为纠正证据传递给以抽象为导向的方法。                                                                                      忆更新中，使得新执行过程重塑后续推理，而非作为
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                      8
+
+
+
+
+                                               图 6: 随时间累积的人类技能数量趋势。
+
+
+
+                                        表 II: 由经验处理算子组织的代表性经验衍生方法。
+
+ Method                  Source                                  Form         Key Characteristics                    Venue/Year
+
+                                                                 Selection
+
+ Voyager [12]            Successful embodied trajectories        Code         Retains successful executable traces   NeurIPS’23
+
+ SkillCraft [44]         Successful tool trajectories            Code         Filters useful tool-use traces         arXiv’26
+
+                                                                Abstraction
+
+ Re exion [19]           Failed trajectories                     Text         Converts failures into lessons         NeurIPS’23
+
+ ExpeL [23]              Successes and failures                  Text         Abstracts reusable lessons             AAAI’24
+
+ BoT [24]                Problem-solving traces                  Text         Distills reasoning templates           NeurIPS’24
+
+ Trace2Skill [27]        Trajectories                            Text         Consolidates trace-level skills        arXiv’26
+
+ FINCON [38]             Decision episodes                       Text         Distills decision insights             NeurIPS’24
+
+ AgentEvolver [71]       Processed trajectory sets               Text         Summarizes cross-task experience       arXiv’25
+
+                                                            Memory Organization
+
+ TiM [35]                Interaction history                     Text         Updates re ective memory               arXiv’23
+
+ G-Memory [70]           Collective experience                   Text         Builds hierarchical memory             NeurIPS’25
+
+ Nemori [41]             Dialogue history                        Text         Consolidates semantic memory           arXiv’25
+
+ Intrinsic Memory [42]   Interaction history                     Text         Maintains contextual memory            arXiv’25
+
+ DAMCS [61]              Multimodal interactions                 Hybrid       Organizes multimodal KG memory         arXiv’25
+
+                                                            Procedural Packaging
+
+ JARVIS-1 [55]           Successful multimodal task execu- Hybrid             Retains task-plan procedures           TPAMI’25
+                         tions
+
+ Synapse [56]            Successful computer-control trajecto- Hybrid         Packages trajectory exemplars          ICLR’24
+                         ries
+
+ AWM [26]                Interaction traces                      Text         Induces work ow skills                 ICML’25
+
+ PolySkill [45]          Successful interaction traces           Code         Builds programmatic skills             ICLR’26
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                         9
+
+
+
+
+孤立记录保留 [35]。G-Memory 通过将集体经验组织                                 技能成果，执行结果决定其是否被丢弃、修改或保留。
+成支持不同抽象层级复用的层次化记忆图，使这种结                                        因此，核心思想并非简单的模型生成，而是基于任务条
+构化更加明确 [70]。Nemori 提供了一个相关示例，其                                 件构建技能，随后进行事后保留或优化。
+中情景式交互被进一步提炼为更稳定的语义记忆；而                                             例如，CREATOR 直接根据任务需求生成可调用
+Intrinsic Memory Agents 则保持结构化的上下文记忆， 的工具，而 ToolMakers 则显式地将技能创建与技能使
+使累积经验能够在更长的时间跨度内持续可用 [41],                                     用分离，使得生成的技能可以后续复用，而非仅局限
+[42]。AgentEvolver 将跨任务经验总结为可重用的自然                              于单个回合 [13], [14]。Cradle 与 CodeAct 合成用于即
+语言引导单元，以供后续探索使用；DAMCS 则将多模                                     时控制与动作的程序化产物，展示了如何使任务直接
+态的历史交互组织成层次化知识图谱记忆，支持检索以                                       引发可复用的操作流程，而不仅仅生成最终答案 [51],
+及用于协作规划的结构化通信 [61], [71]。这些系统在表                                [74]。Alita 与 TROVE 等系统进一步推进这一模式，
+示和范围上有所不同，但都体现了相同的设计思路：将                                       将任务条件生成与执行时验证及后续保留相结合；而
+过往执行结果重新组织为结构化记忆，使其在后续决策                                       SkillWeaver 则显式地从网络交互中发现类似 API 的技
+与适应中仍可被利用。                                                     能，通过后续使用进行筛选，并随时间逐步优化为可复
+     第四种操作是程序归纳与封装。一些系统不仅提取                                    用的可调用产物 [84]。
+纯文本指导，还把重复成功的执行转化为更丰富的可复
+用程序，例如工作流、计划、API 或可执行模块。智能体                                    D. 语料库衍生习得
+工作流记忆（Agent Work ow Memory）是一个典型示
+                           语料库驱动的获取方式从外部文本或结构化资源
+例，它直接从先前的交互迹中归纳出可复用的工作流， 中获取技能，而非来自当前任务或智能体自身的经验。
+并将其存储为具备触发器、多步流程和参数槽的工作流                                       典型来源包括文档、软件仓库、数据集、界面迹和知识
+技能 [26]。类似系统如 JARVIS-1、Synapse 及 Minecraft                     库，其核心过程是将这些资源提炼为可重用的过程性技
+中的 Ghost likewise 亦从成功经验中保留更结构化的                               能。
+程序支持，通常维持顺序性、分解结构或动作依赖关                                           代表性系统展示了该过程的不同实例化。AppA-
+系 [31], [55], [56]。Voyager、SkillCraft 与 Trace2Skill            gent 从界面结构中提取过程信号，AutoGuide 从外部知
+则进一步迈向可复用技能的封装；而 PolySkill 等可执                                 识源中推导出上下文感知的指导方针，而 HuggingGPT
+行技能系统则展示了如何将成功的交互经验抽象为可                                        和 ToolBench/ToolLLM 则从模型卡片和 API 描述中
+直接调用的程序化技能，而非仅限于自由形式的经验总                                       整合过程指导。在数据科学情景中，DS-Agent 采取更
+结 [12], [27], [44], [45]。因此，该操作的关键区别不仅在                        为案例驱动的路径：它挖掘外部竞赛资源（例如，不同
+于其保存了更多信息，更在于它将经验封装为更接近直                                       任务类型中金牌和银牌解决方案的 Kaggle 写作），抽
+接复用的制品——无论是工作流模板、结构化程序，还                                       象出重复出现的解决方案模式，并将其转化为后续任务
+是可执行模块。                                                        可重用的过程指导 [5], [22], [75], [76]。
+     综上所述，这些方法表明，经验获取并非由单一输
+出形式定义。其统一特征在于技能是从过往执行中构建                                       E. 讨论
+的，而主要的设计差异在于这些迹线在重用前如何被处
+                                                                  没有单一的获取方式占据主导地位，它们的实际重
+理。因此，不同系统位于从选择性迹线到总结性经验、
+                                                               要性正变得越来越互补而非排他。借助大模型，人类专
+结构化记忆、封装的工作流，再到可执行的技能实体这
+                                                               家现在能够比以往更容易地将领域知识外化为可复用
+一连续谱系的不同位置，这并不意味着其中任何一种形
+                                                               的技能，通过起草流程、优化使用条件，并以更低的创
+式在所有情况下都优于其他形式。
+                                                               作成本打包支持资源。同样，基于语料库的获取方式也
+                                                               日益有效，因为大模型能够将文档、代码仓库、案例报
+C. 任务驱动的获取                                                     告及其他外部资料转化为更明确的程序化指导，从而将
+     任务衍生的获取方式直接从当前任务的需求中习                                     智能体可获取的候选技能范围扩展到其个人经验之外。
+得技能。任务本身充当生成的触发器：大语言模型或相                                          与此同时，另外两个家族同样重要。基于经验的获
+关合成模块提出候选工作流、脚本、工具包装器或其他                                       取仍然是最丰富且被广泛探索的途径，因为执行迹能够
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                              10
+
+
+
+
+为技能在观察行为中的落地提供天然基础，并通过过                                        靠语义相关性通常并不足够。一个有用的技能还必须在
+滤、抽象、记忆组织和过程封装持续改进这些技能。而                                       当前状态中可执行，满足相关的前置条件，能与其他技
+当智能体面临无法等待专家、语料库或长期经验积累的                                       能正确交互，并且其带来的效用相对于成本而言要足够
+新需求时，基于任务的获取则不可或缺，因为它能够实                                       高 [84], [87], [92]。因此，本节其余部分将技能使用问题
+现按需构建候选技能，随后进行验证与保留。                                           视为一个两阶段过程：我们首先回顾现有系统如何检索
+     综上所述，这四类方法不应被视为相互竞争的替代                                    候选技能，然后分析它们如何对技能进行排序、组合并
+方案，而应看作构建稳健技能生态系统的互补路径。人                                       选择执行。
+类生成的方法提供语义准确率和高可信度的专业知识；
+经验生成的方法提供行为基础和多样性；任务生成的方                                       A. 技能检索
+法提供响应能力；语料库生成的方法则提供可扩展的冷
+                                                                  本小节聚焦于技能使用流水线的第一阶段：系统如
+启动覆盖。在实践中，最强大的技能库很可能是这四种
+                                                               何从大型知识库中检索出一小部分候选技能，以支持后
+路径相结合的产物，而大模型作为共同催化剂，降低了
+                                                               续决策。与引言不同，此处的重点并非泛泛地阐述检索
+在所有四个路径上进行技能创建、变换和维护的成本。
+                                                               的重要性，而是探讨现有系统中候选技能召回率的具体
+                                                               实现方式。我们根据现有研究主要依赖的信号类型对相
+                       V. 技能检索
+                                                               关工作进行分类，包括稠密语义匹配、稀疏词汇匹配、
+     随着智能体系统随着时间积累可复用的经验，瓶颈                                    直接生成技能标识符，以及基于技能之间结构关系引导
+逐渐从技能获取转向技能访问：核心问题不再是某个有                                       的检索。
+用技能是否存在，而在于系统能否在恰当的时机揭示并                                          1) 稠密嵌入检索: 稠密检索是在任务以自然语言
+激活正确的技能 [12], [95]。当技能库在规模和异质性上                                描述，且技能与文本描述、工作流摘要或其他语义元数
+不断增长时，这一挑战尤为突出，其涵盖自然语言指令、 据配对时最常用的方法。其基本思想是将当前任务和候
+工作流记忆、可执行 API 以及带有元数据和辅助资源                                     选技能映射到一个共享的嵌入空间中，然后通过向量
+的封装技能构件 [64], [84], [92], [95]。在这样的情景下， 相似度检索最相关的技能。Voyager [12] 仍然是正则示
+技能使用更应被视为一个多阶段流水线，系统需首先缩                                       例，因为尽管存储的技能本身是可执行代码，但依然对
+小搜索空间，然后根据当前任务和环境状态做出执行决                                       文本技能描述应用了语义检索。近期以技能为中心的
+策 [87], [92]。该流水线通常比 one-shot 语义匹配更为                           系统，如 SAGE [80]、AutoSkill [81] 和 MemSkill [82]，
+丰富：运行时可能先通过名称、描述或元数据发现候选                                       展示了在程序化技能、结构化技能记录以及显式记忆
+技能；仅在需要时逐步披露更详细的指令和资源；最终                                       管理技能中相同的模式。更轻量级的记忆导向变体，如
+将选定的技能绑定到具体的工具、API、文件或子智能                                      ExpeL [23] 和 ReasoningBank [83]，通过将稠密检索应
+体以完成执行 [111]。                                                  用于经验性课程或结构化推理记忆，而非完整的可执行
+     这一视角促使我们区分技能检索与技能选择。技能                                    技能，进一步拓展了这一思路。
+检索关注如何将庞大的技能库缩减为一个可管理的候                                           这使得稠密检索在任务表述差异较大，但系统仍需
+选集，例如通过语义匹配、词汇查找、生成式访问或结                                       通过共享语义层获取可复用技能时，成为自然的切入
+构感知搜索实现。技能选择则关注最终应调用哪个候选                                       点。同样的灵活性也解释了为何稠密检索很少是问题的
+技能，是否应组合多个技能，以及这些选择如何根据当                                       全部答案。语义上的最近邻并不总是应用上的最近邻，
+前观测、子目标和资源预算进行调整。换言之，检索解                                       尤其是当库暴露了比文本相似度更丰富的约束时 [80],
+决的是候选召回问题，而选择解决的是面向执行的决策                                       [82]。因此，稠密检索通常会扩大候选集，而后续阶段
+制定问题。尽管实际系统常常紧密交织这两个阶段，但                                       则通过元数据、结构或执行感知检查来进一步精炼它。
+将二者区分开来能为本节提供更清晰的分析框架。                                            2) 稀疏与关键词检索: 稀疏检索将候选召回视为
+     这一区别也阐明了为何检索技能不能被简单视为                                     对技能资源附带的显式符号字段和元数据的匹配。在
+传统文档检索的一个直接实例。与文档不同，技能是可                                       当前的技能文献中，其主要通过词汇或字段感知的方
+执行的单元：调用它们可能触发工具调用、工作流转移、 式访问这些显式描述符来实现。SAGE [80] 通过其“查
+外部副作用以及非微不足道的成本 [2,3,4]。因此，仅依                                  询 N 元”检索变体展示了这一点，而 SkillWeaver [84]
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                                                11
+
+
+
+
+       Input                            Skill Retrieval                                              Skill Selection
+                          Dense Retrieval             Sparse Retrieval           Context-aware Selection           Skill Composition       Execution &
+                                                                                                                                             Action
+   Task Request
+
+
+                      Semantic Embedding Search    Keyword and API Match           Dynamic Skill Trigger          Build Multi-step Plans
+                                                                                                                                            Invoke Skills
+                        Generative Retrieval        Structured Retrieval            Cost/Utility-Aware             Feedback-Driven
+  State & History
+
+
+                                                                                                                                           Obverse Results
+
+                      Model-Generates Skill IDs   Hierarchy and Graph Search    Optimize by cost, risk, & e.t.c   Rerank by Past Success
+ Budget Constraints
+
+
+                                                               图 7: 技能检索与选择。
+
+
+则高度依赖显式的接口描述和适用性相关的元数据。 检索首先在较高层级上缩小搜索空间，然后再解决更
+AutoSkill [81]、Memento-Skills [85] 和 SkillNet [64] 进                           细粒度的选择问题。SkillRL [87] 和 AgentSkillOS [58]
+一步表明，一旦技能被外部化为结构化资源，词汇匹配                                                       是最清晰的代表，两者均使用显式的层次结构，从广
+和元数据搜索便成为语义检索的有用补充，而非过时的                                                       泛的技能区域逐步过渡到更具体的候选项；而 TOOL-
+基准。                                                                            PLANNER [88] 和 SkillNet [64] 则在工具包或生态系统
+     与稠密检索相比，这条线虽然更窄，但在文档库暴                                                    层级的情景中展现出相同的设计理念。GraphSkill [62]
+露稳定名称、接口字段或触发线索时通常更可信。因                                                        提供了一个相关示例，通过遍历从高层级类别到叶级算
+此，在检索错误主要源于符号不匹配而非语义覆盖缺失                                                       法条目的结构化文档，实现粗粒度剪枝，再进行更细粒
+的情景中，它最为有用。然而，一旦请求变为改写或描                                                       度的检索。这种设计在主要挑战是大规模仓库中的搜索
+述不充分，词汇证据会迅速退化，这也是为什么稀疏检                                                       空间缩减而非判断检索到的技能是否当前可执行时尤
+索通常用于对更广泛的候选集进行精炼或过滤，而不是                                                       为有效。
+直接取代它 [64], [81], [85]。
+                                                                               • 依赖感知的检索，相比之下，更少关注缩小搜索范围，
+     3) 生成式检索: 生成式检索将候选召回视为标识
+                                                                               而更多关注排除违反先决条件、状态约束或组合要求的
+符生成，因此模型在解码过程中直接生成目标工具或
+                                                                               候选项。SkillWeaver [84] 通过先决条件和前提条件过
+技能 token，而不是查询分离的检索索引。这一思想在
+                                                                               滤来体现这一点，CUA-Skill [47] 将结构兼容性作为技
+ToolGen [86] 中表现得最为明显，它在解码过程中将候
+                                                                               能使用的一部分，ToolExpNet [89] 展示了依赖关系如
+选访问重新表述为标识符生成。ToolLLM [22] 提供了
+                                                                               何直接重塑检索后仍保持合理的候选项。当问题不仅在
+一个相关但较为松散的例子，其中生成与大规模工具调
+                                                                               于哪个技能相关，还在于在当前条件下哪个技能能参与
+用紧密耦合，尽管检索阶段并未如此明确地重新表述。
+                                                                               有效执行路径时，这种观点变得尤为重要。
+     从概念上讲，这一方法具有吸引力，因为它消除了
+候选召回与下游动作生成之间的界限。然而，这种紧密                                                           5) 讨论: 综合来看，这些范式表明，技能检索并
+耦合也使得难以将检索质量与调用行为分离，并在大规                                                       非单一的匹配问题，而是在语义灵活性、符号准确率和
+模候选空间中更难保证覆盖范围或标识符的有效性。因                                                       结构可执行性之间的权衡。当任务以开放式的自然语言
+此，在技能调查中，生成式检索应被视为一种邻近机制， 表达时，稠密检索最为有效；而当成功依赖于确切的名
+而非显式技能库中的主导模式。                                                                 称、参数或接口级提示时，稀疏检索则更为可靠。生成
+     4) 结构感知检索: 结构感知的检索假设技能库具                                                  式检索进一步将检索融入解码过程本身，但这也带来了
+有内部组织结构，应引导召回过程，而非将所有候选项                                                       对覆盖范围和标识符有效性控制较弱的问题。相反，结
+视为一个扁平的集合。当前文献中最常见的两种形式                                                        构感知检索在技能构成具有层次结构或依赖图的组合
+是：层次化检索，通过逐步缩小搜索空间；以及 依赖感                                                      空间时最为有用，因为平面相似度无法捕捉此类结构。
+知检索，通过结构兼容性约束过滤候选项。                                                            总体而言，该领域正从单次相关性匹配转向多信号、面
+• 分层检索通过粗粒度到细粒度的结构组织候选项，使                                                      向执行的候选召回。
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                             12
+
+
+
+
+B. 技能选择                                                        预 期 收 益 与 成 本、 风 险 或 副 作 用。MemSkill [82] 和
+                                                               Memento-Skills [85] 展现了这一转变的方法层面，因
+     在检索阶段之后，本小节探讨现有系统如何对所检
+                                                               为它们的路由策略是基于下游效用或行为成功率来塑
+索的候选集做出选择决策。我们将先验工作归纳为四种
+                                                               造的，而不仅仅依赖表面相关性。SkillOrchestra [93]
+常见视角：上下文感知的动态选择、技能组合、成本与
+                                                               提供了一个更清晰的成本感知变体，根据当前技能需
+效用感知的选择，以及反馈驱动的重排序。这些类别更
+                                                               求、预期胜任度和部署成本在候选智能体之间进行路
+应被视为互补的决策维度，而非严格互斥的类别。因此，
+                                                               由。SkillsBench [94] 则提供了最明确的实证动机，表明
+一个实际系统可同时结合多种视角，例如动态选择与成
+                                                               即使经过精心筛选的技能，在某些任务上也可能产生负
+本感知路由相结合，或组合式规划与基于反馈的更新相
+                                                               效用。
+结合。
+     1) 上下文感知的动态选择: 上下文感知的动态选                                     这种观点很重要，因为实际部署的系统不仅因错误
+
+择将技能选择视为一个在线决策过程，该过程依赖于当                                       选择而影响准确率，还会造成计算资源浪费、延迟增加
+
+前观测、子目标和交互历史。与从固定候选集一次性选                                       和不必要的执行。与此同时，文献中仍然使用各种不同
+
+择技能不同，这种视角在执行过程中不断修正技能选                                        的效用概念，缺乏一个统一的技能选择形式化目标。因
+
+择。当同一技能库需支持变化的局部状态而非仅静态任                                       此，与其他三个子类不同，成本与效用感知的选择应被
+
+务描述时，这一模式最为明显。AutoGuide [76] 通过从                               视为一种正在发展的设计准则，应当指导选择过程，而
+
+当前环境状态中选择上下文相关的指导策略，清晰地体                                       非已成熟独立的方法族。
+
+现了这一点。MemSkill [82] 和 Memento-Skills [85] 将                       4) 反馈驱动的重排序: 反馈驱动的重排序通过历
+这一思想扩展至演化的技能库，其中路由决策依赖于当                                       史执行信号更新技能偏好，而非仅依赖当前候选与查询
+前状态以及不断变化的内部上下文。                                               的匹配度。其核心思想是，成功或失败的历史记录可用
+     2) 技能构成: 技能构成视图将技能选择视为在多                                  于重新排列候选项，从而改善后续决策。SkillRL [87]
+个技能中进行选择与组织的问题，而非仅挑选单一最                                        和 CUA-Skill [47] 是最具代表性的以技能为中心的案
+优候选。在此视角下，复杂任务通过组装一系列可复用                                       例，因为执行结果会直接改变对可复用技能的后续优先
+的技能序列、集合或工作流来解决。因此，核心问题不                                       级。ToolExpNet [89]、ExpeL [95] 以及 SMART [96] 提
+仅在于哪些技能相关，还在于它们应如何排序和连接                                        供了相关变体，其中经验通过反馈指导、记忆修正或校
+以执行。SkillWeaver [84]、AWM [92] 和 ASI [46] 最清                    准来影响后续的偏好排序。
+晰地体现了这一点，它们将 API、工作流或程序化例                                         与注重效用的选择不同，反馈驱动的重排序改变的
+程视为可复用的单元，可组合成更复杂的智能体行为。 是过去结果如何重写后续的偏好顺序，而非系统试图优
+AgentSkillOS [58] 与 CUA-Skill [47] 则进一步推进了 化的目标。这一机制对长期运行的智能体最为重要，因
+这一理念，通过形式化的依赖模式显式表达编排结构。 为今天的错误应成为明天的排序信号。但反馈通常并不
+HuggingGPT [5] 仍是一个有用的早期参考，因为它确 清晰，在当前系统中，它往往与记忆编辑或策略适应纠
+立了选择的工作流视角，尽管其更侧重工具，而非后续                                       缠在一起，而非独立的重排序器 [87], [89]。因此，反馈
+以技能为中心的系统。                                                     驱动的重排序通常作为更广泛选择流水线之上的一个
+     这一视角奠定了当前技能选择文献的大部分基础， 增强层出现。
+因为许多任务并非通过选择单一最佳技能来解决。相                                           5) 讨论: 综合来看，这些范式表明，技能选择更应
+反，系统必须决定可重用模块如何被排序、分组或嵌套                                       被视为一个策略问题，而非对检索候选者进行最终排序
+为更大的可执行行为。这种表达能力带来了新的失效模                                       的步骤。上下文感知方法强调对当前状态的适应性。组
+式，因为接口兼容性、顺序约束以及错误传播都成为选                                       合方法强调多个技能之间的协调。成本感知方法强调效
+择问题的一部分 [47], [58], [84]。因此，技能组合通常与                            用与预算之间的明确权衡。反馈驱动方法强调随时间从
+规划或结构引导相结合，而非简单地视为 top-k 排序问                                   执行结果中学习。这些维度并非相互排斥，许多实际系
+题。                                                             统会同时结合多种方法。总体而言，文献表明，技能选
+     3) 成本与效用感知的选择: 这些方法的核心思想                                  择正从静态的相关性选择转向顺序的、执行感知的决策
+是，系统不应仅仅偏好最相关的技能，而应同时考虑                                        过程。
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                                     13
+
+
+
+
+表 III: 技能检索的代表性方法。该表按子类、核心设计、结构先验或选择标签、决策输入以及发表期刊对每种方
+法进行了比较。
+
+ SubClass          Method                  Core Design                                 Tags             Decision Inputs             Venue/Year
+
+                                                                 Skill Retrieval
+
+                   Voyager [12]            Text-described code skill retrieval         Flat             task                        TMLR’24
+ Dense
+                   SAGE [80]               Program skill similarity retrieval          Flat             task instruction            arXiv’25
+
+ Sparse /          AutoSkill [81]          Hybrid rewritten-query retrieval            Flat             rewrite + metadata          arXiv’26
+ keyword
+                   Memento-Skills [85]     Behavior-routed hybrid retrieval            Flat             state + query               arXiv’26
+
+ Generative        ToolGen [86]            Directly generate tool/skill identi er      Flat             task query                  ICLR’25
+
+ Structure-        SkillRL [87]            Hierarchical general-speci c retrieval      Hierarchy        instruction+skill bank      arXiv’26
+ aware
+                   SkillWeaver [57]        Precondition-aware API ltering              graph            state + metadata            arXiv’25
+
+                                                                 Skill Selection
+
+ Context-aware     AutoGuide [76]          Trajectory-derived guideline routing        Ctx              context + trajectory        NeurIPS’24
+
+ skill             AWM [26]                Work ow memory reuse                        Comp             task/subgoal                ICML’25
+ composition
+                   ASI [46]                Veri ed program skill composition           Comp             task + prior skills         COLM’25
+
+ Cost/Utility      MemSkill [82]           Reward-coupled memory routing               Ctx+Util+Fb span + memories                  arXiv’26
+
+ Feedback          CUA-Skill [47]          UI-aware failure reranking                  Ctx+Comp+FbUI + memory + failures            arXiv’26
+ reranking
+                   ToolExpNet [89]         Graph-guided experience reranking           Ctx+Comp+Fbgraph + experience                ACLF’25
+Note: In the Tags column, Flat, hierarchy, and dependency graph denote retrieval-side structural priors; Ctx = context-aware, Comp = composition,
+Util = utility-aware, and Fb = feedback-driven denote selection-side tags.
+
+
+
+C. 检索与选择中的设计维度                                                               合 [46], [92]。随着粒度的增加，问题从选择一个候选对
+         在本小节中，我们强调了影响两个阶段（技能检索                                              象转变为组织更大的可执行结构。因此，所检索对象的
+与选择）的主要设计维度。                                                                 粒度直接决定了下游选择是路由问题还是组装问题。
+         1) 从检索/选择视角看的表示: 技能的表示方式至                                                 4) 目标、反馈与评估: 目标、反馈和评估应一起分
+关重要，因为检索和选择只能利用表示所揭示的信号。 析，因为它们共同决定了系统优化的方向以及该目标如
+纯文本技能主要暴露语义和词汇线索，而纯代码技能通 何随时间更新。选择不仅关乎相关性，还涉及在效用、
+常难以检索或排序，除非有额外的名称、签名、文档字                                                     可靠性或执行负担等约束条件下，是否值得调用某项技
+符串或文本摘要可用 [12]。混合型技能同时暴露语义描                                                  能 [82], [85], [94]。执行反馈随后通过更新哪些候选方
+述和执行相关的结构，这使得它们更易于检索，并在下                                                     案被偏好、抑制或改进来改变未来行为 [85], [87]。这使
+游选择过程中更容易进行约束 [64], [84]。从这一角度                                               得评估尤其困难，因为标准的检索指标（如 top-k 召回
+看，表示最好被理解为系统在检索和选择过程中能够观                                                     率）无法衡量最终执行是否成功，也无法判断所选技能
+察并作用的内容。                                                                     是否产生了正向净效用 [94]。因此，一个完整的评估框
+         2) 状态与适用性: 状态和适用性构成了检索与选                                            架需要将候选质量、执行结果、成本效率以及反馈驱动
+择之间的主要桥梁。一项技能可能与任务描述相关，但                                                     的适应性联系起来，而不是孤立地衡量每一项。
+在当前观测、环境状态或先决条件约束下仍不可用 [84],
+[87]。状态决定了在检索过程中哪些候选项能通过前提
+                                                                                                     VI. 技能演化
+条件或依赖性检查，以及在选择过程中，经过中间观测
+或失败后，之前检索到的候选项是否仍然合适。                                                              人类技能的提升依赖于修正、巩固与重用，而不仅
+         3) 粒度与组成: 粒度决定了系统实际检索或选择                                            仅是经验的积累。国际象棋选手在反复犯错后重塑后续
+的内容。一些系统在单一基本技能层面运行，而另一些                                                     的模式识别能力时得以进步；工匠在失败中修正可执行
+系统则检索工作流记忆、可执行模块或可组合技能的集                                                     的流程时得以进步；临床医生在先前病例更新早期诊断
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                         14
+
+
+
+
+启发法时得以进步。其共同机制是渐进式精炼：反馈改                                          只有在受控重用之后，循环才会闭合。一旦受控技
+变的是能力背后可重用程序，而非仅仅扩展经验记录。                                       能被执行，其结果可产生下一个奖励、失败、反馈、技
+                                                               能差距或信任信号，这些信息返回到修订阶段。表 IV
+                                                               比较了实例化修订、验证、策略耦合和仓库演化的成果
+                                                               变更方法；运行时治理以文字形式讨论，因为它控制重
+                                                               用而非直接重写技能成果。
+
+
+                                                               A. 技能复习
+                                                                  技能修订是演化过程中的内容变更阶段：反馈会修
+                                                               改一个持久存在的技能对象，系统将判断该修改是否应
+                                                               被保留。EvoSkill [97] 符合这一模式，因为执行失败会
+                                                               触发一个决策，即是否对现有技能进行优化，或创建缺
+                                                               失的技能。被接受的结果会以结构化的技能文件夹形式
+                                                               呈现，包含触发元数据、操作说明和辅助脚本。保留下
+                                                               来的验证步骤使得这一过程属于演化而非无约束的自
+                                                               我编辑：候选文件夹必须在将来提升性能后才能被保
+                                                               留。
+                                                                  部署时的修订增加了更强的要求：该技能必须在不
+                                                               破坏未来库的前提下进行重写。Memento-Skills [85] 通
+                                                               过读取相关技能文件夹，在该指导之下执行，并在重写
+                                                               将被后续复用的提示或程序之前进行失败归因来解决
+                                                               此问题。其单元测试门控和回滚步骤使得修订过程可
+                                                               逆。因此，该更新不仅仅是内存读写，而是一系列执行、
+                                                               归因、重写、验证以及后续复用的步骤。
+                                                                  纵 向 修 订 强 调 更 新 过 程 中 的 身 份 一 致 性。Au-
+       图 8: 从人类技能精炼到智能体技能演化。
+                                                               toSkill [81] 将重复行为表示为可编辑的 SKILL.md 单
+     对于智能体系统而言，这种类比只有在技能演化与                                    元，并在用户反馈优化现有能力时，通过添加、合并或
+技能获取分离之后才有用。获取解释了一个候选技能                                        丢弃决策来更新这些单元。XSkill [98] 将这一理念扩展
+最初是如何获得的；而演化则关注一个已形成的技能                                        到多模态智能体，通过维护技能文档与经验记录并行的
+成果在形成后如何被修订、验证、优化、共享和管理。 方式实现；其技能管理器可根据视觉引导的轨迹和使用
+图 8 提供了启发性的类比，而图 9 则给出了本节其余 历史累积，对技能内容进行更新、合并、删除或精炼。
+部分所使用的成果层级的精炼过程。演化的对象可以是                                       在两种情况下，演进的单元并非新的迹，而是一个持续
+Skill.md 文件、技能文件夹、程序 API、工具箱函数、 存在的技能，其内容在后续使用中不断整合。
+技能库或技能图。因此，轨迹、任务结果、用户反馈、          因此，普遍的说法虽然范围有限但力度很强。当反
+奖励、失败以及技能差距都是对技能基底的更新信号， 馈改变了某个命名且可重用的构件，并且该构件在更新
+而非本节的组织类别。               后仍然可用时，这些系统就表现出技能演化。它们并不
+
+     技能修订会改变存储的技能内容。技能验证用于测                                    要求调查将每种基于轨迹的技能构建方法都视为演化；
+
+试所提出的变更是否应被保留。策略耦合使经过验证的                                       证据在于构件的修订、版本管理、验证以及后续的重用。
+
+技能与其使用控制器共同适应。仓库演化将已接受的更
+新转化为索引并同步的技能基础。运行时治理随后在后                                       B. 技能验证
+续任务条件下从该基础中检索候选技能，将其路由至执                                            技能验证将演化转化为生存问题：一项修订后的
+行，应用信任检查，并淘汰不安全或过时的技能。                                         技能必须通过检查，才能被信任为未来的可用能力。
+JOURNAL OF LATEX CLASS FILES, VOL. 18, NO. 9, SEPTEMBER 2020                                                                                                                           15
+
+
+
+
+                    Skill Revision                                   Skill Validation                                                         Policy Coupling
+                                                                                         Rollback                                           Policy Update
+
+
+     Skill                                     Versioning            Versioning Execution                  Survival
+                                                                                                Evidence
+    Artifact Assessment Rewrite    Merge
+                                                  Skill                 Skill     Check                     Check            Controller Validated Skill Rollout   Reward   Skill Gap
+
+
+
+         Signal                                    Runtime Governance                                                                            Repository Evolution
+                                                                                                                                          Synchronize
+
+    Reward      Failure
+                                                                                                       New      New   Repeated
+                                                                                                       Task Environment Task
+                           Evaluation                                                                                                        Skill  Skill                  Accepted
+                                           Execution        Verify    Route Retrieved Skill                                                                       Filter
+    Feedback   Skill Gap                                                                                                                     Bank Ontology                  Update
+                                                                                                              Future Input
+
+
+图 9: 通过分阶段精炼实现技能演化：更新修订技能，验证筛选变更，可信技能被索引、检索、执行并进一步改进。
+
+
+SkillWeaver [84] 将网络智能体技能构建为 API，并通                                                                 置信度和验证检查则控制生成或更新的技能是否被插
+过实践、生成的测试用例以及文档更新来打磨这些技                                                                             入。该库是智能体状态的一部分：选择、生成、添加、
+能——这些是有效的证据，但其强度弱于完整的语义                                                                             更新、驱逐、加载和删除操作与策略共同适应。
+验证，因为通过测试仅能表明函数避免了即时执行失                                                                                这一阶段比一般的持续学习更为狭窄。只有当策略
+败。智能体技能归纳（ASI） [99] 通过将可执行性视                                                                        最优化改变了技能基础，并且该改变后的基础随后影响
+为获取与演化之间的边界，进一步强化这一检查机制： 了策略的动作空间或滚动分布时，一种方法才属于此
+只有在经过测试轨迹验证后，归纳出的程序才会进入                                                                             处。这就是为什么将 CASCADE [112] 后续视为一个边
+精炼循环；当网站发生变化时，先验技能也可被更新。 界案例的原因：它为累积可执行的科学流程提供了有用
+TroVE [100] 将修复单元从单一技能扩展至功能工具箱， 的证据，但其核心机制是科学工具使用的持续学习与自
+通过执行一致性来增删条目；而程序化技能网络（PSN） 我反思，而非基于强化学习风格的技能库与控制器的协
+[54] 更进一步，构建了一个由可执行符号技能组成的有                                                                         同最优化。
+向图，包含故障定位、成熟度门控以及回滚验证的重构
+机制。经审计的技能图 [101] 通过增加证据层，仅当候                                                                        D. 仓库演化
+选技能获得验证报告和可重放的证据包支持时，才将其
+                                                                                                       代码库演化探讨的是被接受技能的变化尺度如何
+提升为有向图中的节点。在这些方法中，可执行技能的
+                                                                                                    超越单一构件。Uni-Skill [103] 的目标是机器人操作情
+演化依赖于一次生存检查——执行、一致、重放或回滚
+                                                                                                    景，其中固定的知识库无法涵盖新的任务分解。其规划
+——在提议的更新成为可复用基础之前，必须通过该检
+                                                                                                    器能够检测缺失的技能，请求补充的技能描述，并利
+查。
+                                                                                                    用 SkillFolder 将这些描述在分层的标注机器人视频片
+                                                                                                    段知识库中进行定位。因此，该演化主张应被理解为代
+C. 政策耦合                                                                                             码库的扩展与定位，而非对现有条目的成熟自主修订。
+     策略耦合将技能底座视为控制器训练状态的一部                                                                             当仓库本身经过精炼、过滤和连接时，其演化的重
+分。SkillRL [87] 构建了一个分层的技能库，在回放过                                                                     要性更为突出。SkillX [104] 将多层次技能知识库作为
+程中检索通用技能和任务特定技能，并在强化学习过程                                                                            改进对象：轨迹被提炼为规划级、功能级和原子级技能；
+中执行递归技能演化。验证失败暴露了现有技能不足的                                                                            生成的技能经过精炼与过滤；并通过经验引导的探索扩
+区域，而基于奖励的策略更新则改变了系统接下来遇到                                                                            展覆盖范围。SkillNet [64] 则将重点转向共享基础设施。
+的失败和技能缺口。因此，技能库是一个动态的训练组                                                                            它通过动态本体构建、关系图谱、数据驱动的过滤以及
+件，而非静态的上下文缓存。                                                                                       涵盖安全性、完整性、可执行性、可维护性和成本意识
+     ARISE [102] 通过分层的管理器-工作者设计使耦                                                                   的多维度评估，对大型仓库进行组织。
+合关系显式化。技能管理器在执行前选择相关技能，并                                                                               集体演化引入了同步问题。SkillClaw [105] 在用户
+在执行后将成功的迹线汇总至分层缓存——蓄水池库                                                                             间聚合轨迹，让智能体演化器对现有技能进行优化或创
+中。分层奖励同时鼓励任务成功和有用技能的使用，而                                                                            建新技能，将在用户环境中验证候选更新，并将已接受
+

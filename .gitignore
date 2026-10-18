@@ -6,6 +6,9 @@ out/
 .turbo/
 coverage/
 *.tsbuildinfo
+next-env.d.ts
+# 演示站构建时从 packages/demo-data 同步的录制数据
+apps/demo/public/demo-fixtures/
 
 # 密钥与本地环境（永不提交）
 .env

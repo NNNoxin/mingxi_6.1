@@ -1,0 +1,102 @@
+AI 情报简报 · 2026-07-16
+  雷达: 2026-07-16 00:12 UTC（295条，去重后287条） | Builders: 2026-07-15 07:01 UTC（15位 builder / 39
+  条推文 / 1期播客） 双源去重: 8条（雷达与Builders两侧同时捕获，保留在Builders区并标注 📡 双源信号）
+
+
+ 🛰 过去24小时 · AI 圈信号
+🔥 重磅发布与更新
+1. Claude Code 新增 MCP 连接器调用功能 — Anthropic 官方 链接
+2. OpenAI 发布 GPT-Red：通过自动化红队测试提升模型鲁棒性 OpenAI 官方介绍 GPT-Red 系统，通过
+AI 自动攻击自家模型发现安全漏洞，成功率 84%，远超人类红队测试员水平。 官网 | The Decoder 报道
+3. Grok Build 现已开源 — Elon Musk 宣布 xAI 的 Grok Build 工具正式开源。但同日曝出该工具曾上传整个
+代码库至谷歌云，SpaceX 紧急关闭相关功能。 Elon Musk 原推 | 安全问题报道
+4. Thinking Machines 发布多模态模型 Inkling — 官方 链接
+5. OpenAI 首款智能音箱曝光，将搭载 GPT-Live 语音模型 链接
+6. Hugging Face：What building Shippy taught us about building agents Allen AI 团队分享构建智能体
+Shippy 的经验教训，探讨智能体架构中的知识层、执行层与协调层。 链接
+7. IBM Research：Model Routing Is Simple. Until It Isn’t. 深入分析模型路由的复杂性与工程实践。 链接
+🤖 智能体与产品动态
+8. Anthropic 研究：AI 智能体模拟中行为偏差 链接
+9. 京东AI Agent与腾讯元宝打通小程序生态，实现AI对话内一键下单 用户可在对话中直接购物下单，标志着
+国内 AI Agent 商业化落地进一步加速。 链接 | 同源报道
+10. 国行 Apple 智能完成备案，阿里千问（Qwen）将集成至 Apple Intelligence 服务中国用户 标志着
+Apple 智能正式进入中国市场，采用阿里通义千问作为底层模型。 IT之家 | X 报道
+11. 金山办公推出 WPS Comate AI 办公客户端 链接
+12. 谷歌 Chrome 安卓版重构底部栏：新增 Gemini 专属按钮并支持多标签页 AI 分析 链接
+📜 政策与监管
+13. 我国首部AI拟人化互动服务新规今起施行，六大红线明确划定 明确规定不得向未成年人提供虚拟伴侣等关
+键限制。 链接
+14. OpenAI：美国正通过州和联邦行动推进 AI 安全 链接
+15. 前谷歌 DeepMind 研究员因公司签署无限制军事 AI 协议而离职 引发关于 AI 伦理与军事应用边界的广泛
+讨论。 链接
+🔒 安全与开发者工具
+16. Cursor IDE 曝出致命 0day 漏洞！打开恶意仓库即可执行代码 链接
+17. GitHub 改进密钥扫描与公开监控功能 链接
+18. 开源编程智能体内存方案 Déjà Vu 发布，通过 SSH 同步 链接
+🌐 其他关注
+19. 出版商与作家集体起诉谷歌盗用版权内容训练 Gemini 内部文件曾预警千亿罚款风险。 链接
+20. WAIC 2026 大会火力全开！MiniMax 与智谱股价狂飙超 8% 链接
+21. 努比亚率先完成智能体大模型备案，全球首款 AI 智能体手机即将亮相 链接
+22. 法国凭借低价电力在 AI 竞争中脱颖而出 链接
+23. AI 语音诈骗：退休老人因合成女儿哭声被骗 1.5 万美元 AI 语音欺诈速度超越一切防御手段，值得警惕。
+链接
+
+ 🧑‍💻 Builders · 他们在说什么
+Sam Altman（OpenAI CEO）— GPT-5.6 Sol 需求爆炸
+GPT-5.6 Sol 的增长”令人疯狂”。Altman 透露推理团队做了大量英雄式的工作来支撑需求，OpenAI 将”移山
+倒海”继续扩容，但可能很快会有一些小波动。他还表示倾向于使用开源工具链（harness）。 原推（9749❤）
+Thibault Sottiaux（OpenAI Codex & ChatGPT）— 📡 双源信号
+ChatGPT Work / Codex 使用量即将突破 900 万，团队讨论是否再次重置用量。同时推出激进促销：发推分
+享 GPT-5.6 Sol 使用体验，前 1 万名用户可获得 100 美元 Codex credits。 双源信号推文（3608❤） | 促销推
+文（5757❤）
+Guillermo Rauch（Vercel CEO）— 开放 AI Token 流数据集
+Vercel 开放了 AI Gateway 上的 token 流数据集，Rauch 亲自用该数据集做了可视化分析。同时推荐
+AgentMail（ vercel install agentmail ），让 Agent 即装即用邮件能力。 数据集推文（83❤） | AgentMail
+（159❤）
+Aaron Levie（Box CEO）— 代码天然适合 Agent
+Levie 指出代码之所以高度适合 Agent，是因为你可以快速测试结果——要么手动看应用是否工作，要么跑测
+试。大多数其他工作领域没有这个优势。他还提议建立一个 AI 标准化组织（不同于监管机构），以便更快迭代
+标准并与行业协作。 代码与Agent（149❤） | AI标准组织（112❤）
+Ryo Lu（Cursor 设计负责人）— 组建最强设计团队
+Ryo Lu 宣布正在组建 Cursor 的设计团队（包括设计工程师），感慨”当梦想变成工作”的感悟。此前他曾在
+Notion、Stripe 工作。 招聘推文（896❤） | 梦想与现实（809❤）
+Thariq（Anthropic Claude Code）— 用 Claude Code 玩宝可梦
+Thariq 展示了一个有趣用例：用 Claude Code 编写代码，调用 Smogon 的 npm 库拉取实时使用数据，分
+析对战匹配、计算伤害断点、构想队伍配置。 原推（302❤）
+Peter Yang（AI 内容创作者）— ChatGPT Work 完整设置教程
+Peter Yang 预告将发布新视频，分享如何用 ChatGPT Work（即 Codex）完成几乎所有电脑操作，涵盖从
+选择合适的 GPT-5.6 模型到管理邮件、日历和周期性任务的 7 步完整设置。 📡 双源信号 原推
+Dan Shipper（Every CEO）— 📡 双源信号
+Dan Shipper 分享了 Codex Desktop 应用发布后的”氛围检查”，并表示如果你一直在关注 Every，6 个月前
+就能预判 Codex 的爆发。Every 将在布鲁克林举办订阅者线下聚会。 氛围检查 | Codex 预判
+Peter Steinberger（独立开发者）— 📡 双源信号
+推荐 Suno AI 的音乐生成能力，称其在”产出爆款”。同时强调始终运行自动审查（autoreview）的重要性。
+Suno AI（167❤） | autoreview
+Swyx（Latent Space / AI Engineer）— 📡 双源信号
+Swyx 在旧金山组织 Personal AI 工程师线下 Demo 活动，强调个人 AI 智能体（PAI）的持续生命力——上
+次活动的主讲团队被 Amazon 硬件部门收购。 活动推文（40❤）
+Claude（Anthropic）— Claude for Teachers 面向 K-12
+Anthropic 推出 Claude for Teachers，主打隐私优先：绝不用对话训练模型，学生信息受 FERPA 合规的数
+据处理协议保护。教师可通过 Learning Commons 连接州标准与优质课程，直接生成教案和学生材料。 隐私
+承诺（514❤） | 功能介绍（647❤）
+Garry Tan（Y Combinator CEO）
+Garry Tan 批评旧金山的治理失败，称其不仅在毁掉城市，也在掠夺公共资源。 原推（486❤）
+Nikunj Kothari（FPV Ventures 合伙人）
+Kothari 观察到一个有趣趋势：在 AI 时代，最顶尖的工程师往往也是重度社交媒体用户——当 Agent 在后台
+工作时，X 成为他们等待期间的多巴胺来源。 原推（23❤）
+ 🎙 播客精选
+Training Data: Anthropic 平台负责人 Katelyn Lesse & Angela Jiang — 构建生态系统，而
+非围墙花园
+核心要点：Anthropic 平台团队正在从”知识层 → 执行层 → 协调层”的路径推进抽象层级。协调层是最新方
+向——当你需要给不同 token 分配不同角色（比如一个负责建议、一个负责执行），就需要编排策略
+（orchestrated strategies）来组合它们。
+关键引言： > “The coordination layer is almost like a meta harness. The true low level harness is
+designed for execution. But the next one is about composing orchestrated strategies that go together,
+and they should sit on top of all these things because at the end of the day, still need to execute.”
+开发者视角：Anthropic 平台同时服务内外部——对外提供 API 和开发者平台，对内运行产品基础设施。这意
+味着 Anthropic 的 API 能力与其内部产品能力是同源的，开发者可以期待与 Claude.ai 产品同等的底层能
+力。
+🎧 完整播客
+
+  🧠 由DesireCore整理完成：https://www.desirecore.cn/
+

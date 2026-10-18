@@ -1,0 +1,99 @@
+name: 视觉回归
+
+# 演示站与原版 demo 5（基准提交）在同一台机器上各走一遍 41 步产品导览，逐步比对 DOM 快照与像素（docs/00 B1、docs/04 P2）。
+# 只在界面、演示数据、演示站或对比工具变化时运行。
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "packages/ui/**"
+      - "packages/demo-data/**"
+      - "apps/demo/**"
+      - "e2e/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/visual.yml"
+  pull_request:
+    paths:
+      - "packages/ui/**"
+      - "packages/demo-data/**"
+      - "apps/demo/**"
+      - "e2e/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/visual.yml"
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASELINE_REPO: https://github.com/noxinsun-source/mingxi-demo-5.git
+      BASELINE_COMMIT: 81f92d7
+      BASELINE_DIR: ${{ github.workspace }}/../demo5-baseline
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: 安装 Chromium 与截图字体（Playwright 的系统依赖，含中日韩字体）
+        run: pnpm --filter @mingxi/e2e exec playwright-core install --with-deps chromium
+
+      - name: 构建原版 demo 5（基准提交，生产构建）
+        run: |
+          git clone --filter=blob:none "$BASELINE_REPO" "$BASELINE_DIR"
+          git -C "$BASELINE_DIR" checkout --detach "$BASELINE_COMMIT"
+          cd "$BASELINE_DIR"
+          npm ci
+          WRANGLER_LOG_PATH=.wrangler/wrangler.log npx vinext build
+
+      - name: 构建演示站
+        run: MINGXI_PUBLIC_URL=http://localhost:4400 pnpm --filter @mingxi/demo build
+
+      - name: 启动两个站点
+        run: |
+          (cd "$BASELINE_DIR" && WRANGLER_LOG_PATH=.wrangler/wrangler.log nohup npx vinext start --port 4319 > "$RUNNER_TEMP/baseline.log" 2>&1 &)
+          (nohup pnpm --filter @mingxi/demo serve 4400 > "$RUNNER_TEMP/demo.log" 2>&1 &)
+          for url in http://localhost:4319/demo http://localhost:4400/demo; do
+            for attempt in $(seq 1 60); do
+              if curl -fsS -o /dev/null "$url"; then echo "就绪：$url"; break; fi
+              if [ "$attempt" = 60 ]; then echo "启动超时：$url"; cat "$RUNNER_TEMP"/*.log; exit 1; fi
+              sleep 2
+            done
+          done
+
+      - name: 捕获（原版 3 次、演示站 1 次，并行）
+        working-directory: e2e
+        run: |
+          pids=()
+          for i in 1 2 3; do
+            pnpm capture --base http://localhost:4319 --out ".artifacts/base-$i" > "$RUNNER_TEMP/capture-base-$i.log" 2>&1 & pids+=($!)
+          done
+          pnpm capture --base http://localhost:4400 --out .artifacts/candidate > "$RUNNER_TEMP/capture-candidate.log" 2>&1 & pids+=($!)
+          status=0
+          for pid in "${pids[@]}"; do wait "$pid" || status=1; done
+          tail -n 3 "$RUNNER_TEMP"/capture-*.log
+          exit "$status"
+
+      - name: 对比
+        working-directory: e2e
+        run: pnpm compare --expected .artifacts/base-1,.artifacts/base-2,.artifacts/base-3 --actual .artifacts/candidate --out .artifacts/diff
+
+      - name: 上传对比报告（失败时）
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression
+          path: |
+            e2e/.artifacts/diff
+            e2e/.artifacts/candidate
+            e2e/.artifacts/base-1
+            ${{ runner.temp }}/capture-*.log
+          retention-days: 7

@@ -1,4 +1,4 @@
-// 用法：pnpm --filter @mingxi/e2e capture -- --base http://localhost:4317 --out .artifacts/baseline
+// 用法：pnpm --filter @mingxi/e2e capture --base http://localhost:4317 --out .artifacts/baseline
 // 遍历产品导览，输出每一步的截图（step-XX.png）、DOM 快照（step-XX.dom.json）与 steps.json（标题、路由、是否稳定、期间的请求、网络回放统计）。
 // 先预热走一遍记录全部响应，再在网络回放下走第二遍截图（见 network-replay.ts）。
 import { mkdir, writeFile } from "node:fs/promises";

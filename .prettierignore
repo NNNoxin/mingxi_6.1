@@ -14,3 +14,7 @@ packages/ui/src/styles
 packages/ui/src/data
 packages/ui/baseline-manifest.json
 packages/demo-data/fixtures
+# 原样迁移自 demo 5 基准提交的路由文件与静态资源（见 apps/demo/BASELINE.md）
+apps/demo/app
+apps/demo/public
+apps/demo/baseline-manifest.json

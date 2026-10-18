@@ -1,4 +1,4 @@
-// 用法：pnpm --filter @mingxi/e2e compare -- --expected .artifacts/base-1,.artifacts/base-2,.artifacts/base-3 --actual .artifacts/candidate --out .artifacts/diff
+// 用法：pnpm --filter @mingxi/e2e compare --expected .artifacts/base-1,.artifacts/base-2,.artifacts/base-3 --actual .artifacts/candidate --out .artifacts/diff
 // 逐步比较新版与原版（docs/00 B1）。--expected 给原版的多次捕获（建议 3 次以上，都在网络回放下得到）：
 //
 // 1. DOM 快照：新版必须与原版逐项完全相同（标签、class、文字、样式、位置尺寸、滚动位置）；原版多次捕获之间也必须相同，
