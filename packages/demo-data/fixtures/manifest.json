@@ -1,0 +1,14 @@
+{
+  "baseline": {
+    "repo": "noxinsun-source/mingxi-demo-5",
+    "commit": "81f92d7"
+  },
+  "recordedFrom": "http://localhost:4318",
+  "recordedAt": "2026-10-18T16:09:51.186Z",
+  "counts": {
+    "notes": 60,
+    "purposeSuggestions": 60,
+    "thinkCases": 144
+  },
+  "digest": "5ec576cdeba54aacd6b7a3a7c81e6526bdd64b29961d8d02aa464d187362b3d1"
+}

@@ -35,6 +35,8 @@ export async function walkTour(
   page: Page,
   baseUrl: string,
   onStep: (capture: TourStepCapture) => Promise<void>,
+  /** 只截这些步骤（从 1 开始）；其余步骤照常推进但不等待稳定、不截图。默认全部。 */
+  onlySteps?: ReadonlySet<number>,
 ): Promise<number> {
   let pending: RecordedRequest[] = [];
   const byRequest = new Map<Request, RecordedRequest>();
@@ -79,6 +81,10 @@ export async function walkTour(
     await page.waitForFunction(() => !document.querySelector(".mx-tour-veil.on"), undefined, {
       timeout: 30_000,
     });
+    if (onlySteps && !onlySteps.has(index + 1)) {
+      if (index < total - 1) await page.locator(`${CARD} button.go`).click();
+      continue;
+    }
     const shot = await stableScreenshot(page);
     const title = (await page.locator(`${CARD} #mx-tour-title`).innerText()).trim();
     const requests = pending;

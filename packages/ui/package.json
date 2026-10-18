@@ -6,11 +6,26 @@
   "description": "明晰 demo 5（基准提交 81f92d7）的界面组件与样式，原样迁移；改动登记见 BASELINE.md",
   "exports": {
     "./components/*.css": "./src/components/*.css",
-    "./components/*": "./src/components/*.tsx",
-    "./lib/*": "./src/lib/*.ts",
+    "./components/*": {
+      "types": "./dist/types/components/*.d.ts",
+      "default": "./src/components/*.tsx"
+    },
+    "./data-source/port": {
+      "types": "./dist/types/data-source/port.d.ts",
+      "default": "./src/data-source/port.ts"
+    },
+    "./data-source/context": {
+      "types": "./dist/types/data-source/context.d.ts",
+      "default": "./src/data-source/context.tsx"
+    },
+    "./lib/*": {
+      "types": "./dist/types/lib/*.d.ts",
+      "default": "./src/lib/*.ts"
+    },
     "./styles/*.css": "./src/styles/*.css"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json"
   },
   "peerDependencies": {

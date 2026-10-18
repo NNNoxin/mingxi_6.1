@@ -15,6 +15,20 @@ export const CONTEXT_OPTIONS: BrowserContextOptions = {
   colorScheme: "light",
 };
 
+/**
+ * 固定 Chromium 的文字与图层光栅化方式。界面里有小数倍缩放的画布（逻辑画布 fitView），
+ * 默认设置下文字在缩放图层上的光栅化时机不固定，同一页面两次截图会有亚像素差异。
+ */
+export const CHROMIUM_ARGS = [
+  "--disable-gpu",
+  "--disable-lcd-text",
+  "--disable-font-subpixel-positioning",
+  "--force-color-profile=srgb",
+  "--disable-partial-raster",
+  "--disable-threaded-animation",
+  "--disable-checker-imaging",
+] as const;
+
 const TOUR_SPEED_STORAGE_KEY = "mingxi-product-tour-speed-v1";
 
 export async function newDeterministicContext(browser: Browser): Promise<BrowserContext> {

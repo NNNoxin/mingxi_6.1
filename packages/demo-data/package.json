@@ -1,0 +1,28 @@
+{
+  "name": "@mingxi/demo-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "演示站数据源：回放从 demo 5 基准版本录制的接口响应（docs/00 D1、D5a）",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "record": "tsx scripts/record-baseline-fixtures.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@mingxi/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "eslint": "10.13.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@mingxi/ui": "workspace:*"
+  }
+}
