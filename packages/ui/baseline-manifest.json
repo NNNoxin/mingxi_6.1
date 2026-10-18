@@ -1,0 +1,223 @@
+{
+  "baseline": {
+    "repo": "noxinsun-source/mingxi-demo-5",
+    "commit": "81f92d7"
+  },
+  "files": [
+    {
+      "from": "app/globals.css",
+      "to": "src/styles/globals.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/demo/FloatBall.tsx",
+      "to": "src/components/demo/FloatBall.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/demo/OppoPhoneDemo.tsx",
+      "to": "src/components/demo/OppoPhoneDemo.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/demo/oppo-phone-demo.css",
+      "to": "src/components/demo/oppo-phone-demo.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mindtrace/ServiceWorkerRegister.tsx",
+      "to": "src/components/mindtrace/ServiceWorkerRegister.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/DomainFanAtlas.tsx",
+      "to": "src/components/mingxi/DomainFanAtlas.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/mingxi/DomainPurposeRail.tsx",
+      "to": "src/components/mingxi/DomainPurposeRail.tsx",
+      "rewrittenImports": 2
+    },
+    {
+      "from": "components/mingxi/ExternalVerificationFlow.tsx",
+      "to": "src/components/mingxi/ExternalVerificationFlow.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/mingxi/KnowledgeExpansionDemo.tsx",
+      "to": "src/components/mingxi/KnowledgeExpansionDemo.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/LogicChainDeliveryCard.tsx",
+      "to": "src/components/mingxi/LogicChainDeliveryCard.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/LogicMindMap.tsx",
+      "to": "src/components/mingxi/LogicMindMap.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/MarkdownView.tsx",
+      "to": "src/components/mingxi/MarkdownView.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/NoteMediaView.tsx",
+      "to": "src/components/mingxi/NoteMediaView.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/mingxi/ProductAgentPanels.tsx",
+      "to": "src/components/mingxi/ProductAgentPanels.tsx",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/ProductDemoTour.tsx",
+      "to": "src/components/mingxi/ProductDemoTour.tsx",
+      "rewrittenImports": 2
+    },
+    {
+      "from": "components/mingxi/ThinkLogicNoteUi.tsx",
+      "to": "src/components/mingxi/ThinkLogicNoteUi.tsx",
+      "rewrittenImports": 2
+    },
+    {
+      "from": "components/mingxi/ThinkLogicReplayDemo.tsx",
+      "to": "src/components/mingxi/ThinkLogicReplayDemo.tsx",
+      "rewrittenImports": 5
+    },
+    {
+      "from": "components/mingxi/ThinkLogicReportDrawer.tsx",
+      "to": "src/components/mingxi/ThinkLogicReportDrawer.tsx",
+      "rewrittenImports": 1
+    },
+    {
+      "from": "components/mingxi/WebWorkbench.tsx",
+      "to": "src/components/mingxi/WebWorkbench.tsx",
+      "rewrittenImports": 4
+    },
+    {
+      "from": "components/mingxi/external-verification-flow.css",
+      "to": "src/components/mingxi/external-verification-flow.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/knowledge-expansion-demo.css",
+      "to": "src/components/mingxi/knowledge-expansion-demo.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/logic-chain-delivery-card.css",
+      "to": "src/components/mingxi/logic-chain-delivery-card.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/product-demo-tour.css",
+      "to": "src/components/mingxi/product-demo-tour.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/think-logic-demo.css",
+      "to": "src/components/mingxi/think-logic-demo.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "components/mingxi/web-workbench.css",
+      "to": "src/components/mingxi/web-workbench.css",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "data/mingxi/eval/vocab/domain-backbone.json",
+      "to": "src/data/mingxi/eval/vocab/domain-backbone.json",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "data/mingxi/eval/vocab/domain-synonyms.json",
+      "to": "src/data/mingxi/eval/vocab/domain-synonyms.json",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/demo/product-tour-script.ts",
+      "to": "src/lib/mingxi/demo/product-tour-script.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/demo/tour-bus.ts",
+      "to": "src/lib/mingxi/demo/tour-bus.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/intent/canonicalize-domain.ts",
+      "to": "src/lib/mingxi/intent/canonicalize-domain.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/domain-coverage.ts",
+      "to": "src/lib/mingxi/web/domain-coverage.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/external-verification.ts",
+      "to": "src/lib/mingxi/web/external-verification.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/note-media.ts",
+      "to": "src/lib/mingxi/web/note-media.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-demo-notes.ts",
+      "to": "src/lib/mingxi/web/think-demo-notes.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-cases.ts",
+      "to": "src/lib/mingxi/web/think-replay-cases.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-contrast-deep.ts",
+      "to": "src/lib/mingxi/web/think-replay-contrast-deep.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-live.ts",
+      "to": "src/lib/mingxi/web/think-replay-live.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-notegraph.ts",
+      "to": "src/lib/mingxi/web/think-replay-notegraph.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-report.ts",
+      "to": "src/lib/mingxi/web/think-replay-report.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-script.ts",
+      "to": "src/lib/mingxi/web/think-replay-script.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-skill-loop.ts",
+      "to": "src/lib/mingxi/web/think-replay-skill-loop.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-stm.ts",
+      "to": "src/lib/mingxi/web/think-replay-stm.ts",
+      "rewrittenImports": 0
+    },
+    {
+      "from": "lib/mingxi/web/think-replay-types.ts",
+      "to": "src/lib/mingxi/web/think-replay-types.ts",
+      "rewrittenImports": 0
+    }
+  ]
+}

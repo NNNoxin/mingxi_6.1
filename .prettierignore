@@ -7,3 +7,6 @@ coverage
 packages/db/migrations/meta
 docs
 *.md
+# 原样迁移自 demo 5 基准提交的界面代码：保持原文件格式，不做重排（见 packages/ui/BASELINE.md）
+packages/ui/src
+packages/ui/baseline-manifest.json

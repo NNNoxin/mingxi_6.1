@@ -1,0 +1,30 @@
+{
+  "name": "@mingxi/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "明晰 demo 5（基准提交 81f92d7）的界面组件与样式，原样迁移；改动登记见 BASELINE.md",
+  "exports": {
+    "./components/*.css": "./src/components/*.css",
+    "./components/*": "./src/components/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./styles/*.css": "./src/styles/*.css"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "next": "16.4.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "next": "16.4.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "typescript": "6.0.3"
+  }
+}
