@@ -68,11 +68,16 @@ const IMPORT_PATTERN = /((?:from|import)\s*\(?\s*["'])@\/([^"']+)(["'])/g;
 function rewriteImports(source, targetRel) {
   let count = 0;
   const rewritten = source.replace(IMPORT_PATTERN, (_match, before, aliased, after) => {
-    const mapped = FILES.find(([from]) => from.replace(/\.(tsx?|css|json)$/, "") === aliased.replace(/\.(tsx?|css|json)$/, ""));
+    const mapped = FILES.find(
+      ([from]) => from.replace(/\.(tsx?|css|json)$/, "") === aliased.replace(/\.(tsx?|css|json)$/, ""),
+    );
     if (!mapped) throw new Error(`${targetRel} 引用了不在导入清单里的模块：@/${aliased}`);
     const mappedTarget = mapped[1] ?? mapped[0];
     const keepExtension = /\.(css|json)$/.test(aliased);
-    let spec = relative(dirname(targetRel), keepExtension ? mappedTarget : mappedTarget.replace(/\.(tsx?)$/, ""));
+    let spec = relative(
+      dirname(targetRel),
+      keepExtension ? mappedTarget : mappedTarget.replace(/\.(tsx?)$/, ""),
+    );
     if (!spec.startsWith(".")) spec = `./${spec}`;
     count += 1;
     return `${before}${spec}${after}`;
@@ -83,7 +88,9 @@ function rewriteImports(source, targetRel) {
 const manifest = [];
 for (const [from, to = from] of FILES) {
   const source = await readFile(join(baselineRoot, from), "utf8");
-  const { rewritten, count } = /\.(tsx?|css)$/.test(from) ? rewriteImports(source, to) : { rewritten: source, count: 0 };
+  const { rewritten, count } = /\.(tsx?|css)$/.test(from)
+    ? rewriteImports(source, to)
+    : { rewritten: source, count: 0 };
   const target = join(packageRoot, "src", to);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, rewritten);
@@ -93,4 +100,6 @@ await writeFile(
   join(packageRoot, "baseline-manifest.json"),
   `${JSON.stringify({ baseline: { repo: "noxinsun-source/mingxi-demo-5", commit: BASELINE_COMMIT }, files: manifest }, null, 2)}\n`,
 );
-process.stdout.write(`已导入 ${manifest.length} 个文件，改写导入 ${manifest.reduce((n, f) => n + f.rewrittenImports, 0)} 处\n`);
+process.stdout.write(
+  `已导入 ${manifest.length} 个文件，改写导入 ${manifest.reduce((n, f) => n + f.rewrittenImports, 0)} 处\n`,
+);
