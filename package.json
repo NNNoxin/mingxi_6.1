@@ -16,11 +16,15 @@
     "test:integration": "turbo run test:integration --concurrency=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "secrets:check": "git ls-files -z | xargs -0 secretlint --secretlintrc .secretlintrc.json",
     "verify": "pnpm format:check && turbo run lint typecheck test",
     "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
+    "@secretlint/secretlint-rule-pattern": "13.0.7",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.7",
     "prettier": "3.9.10",
+    "secretlint": "13.0.7",
     "turbo": "2.11.9",
     "typescript": "6.0.3"
   }

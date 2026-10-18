@@ -41,6 +41,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: 密钥扫描（全部入库文件，规则见 .secretlintrc.json）
+        run: pnpm secrets:check
       - name: 格式、lint、类型检查、单元测试
         run: pnpm verify
       - name: 集成测试（真实 PostgreSQL + pgvector、Redis）
