@@ -12,6 +12,8 @@ on:
       - "e2e/**"
       - "pnpm-lock.yaml"
       - ".github/workflows/visual.yml"
+  # 手动重跑，用于确认结果稳定
+  workflow_dispatch:
   pull_request:
     paths:
       - "packages/ui/**"

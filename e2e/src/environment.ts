@@ -20,9 +20,7 @@ export const CONTEXT_OPTIONS: BrowserContextOptions = {
 
 /**
  * 固定 Chromium 的文字与图层光栅化方式，减少同一页面两次截图之间的亚像素差异。
- * 仍无法消除的一处：逻辑画布 `.tld-world` 带 `will-change: transform`，Chromium 按它第一次光栅化时的缩放保留位图，
- * 第一次光栅化落在 fitView 之前还是之后取决于帧时序，原版自己多次截图也会出现两种结果（第 39 步，约 0.18%），
- * 对比时按原版自身的差异放宽这一步，并用 DOM 快照保证布局完全一致（见 compare.ts）。
+ * 带 `will-change: transform` 的图层沿用旧位图造成的差异（第 39 步逻辑画布）由截图前重新光栅化消除，见 screenshot.ts。
  */
 export const CHROMIUM_ARGS = [
   "--disable-gpu",
