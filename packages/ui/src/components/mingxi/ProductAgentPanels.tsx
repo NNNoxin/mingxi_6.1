@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMingxiDataSource } from "../../data-source/context";
 
 /** 产品 Demo：外查卡 / 决断卡 / 成件 / 评测 / 捕获 / 用途确认 */
 
@@ -126,6 +127,7 @@ export function PurposeConfirmPanel({
     persistence: "server" | "browser";
   }) => void;
 }) {
+  const dataSource = useMingxiDataSource();
   const [loadState, setLoadState] = useState<PurposeLoadState>("loading");
   const [saveState, setSaveState] = useState<PurposeSaveState>("idle");
   const [feedback, setFeedback] = useState("");
@@ -142,13 +144,8 @@ export function PurposeConfirmPanel({
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(`/api/mingxi/purpose?noteId=${encodeURIComponent(noteId)}`);
-        const data = (await res.json()) as {
-          title?: string;
-          pending?: boolean;
-          purposeLabel?: string;
-          candidates?: Array<Partial<PurposeCandidateView>>;
-        };
+        const res = await dataSource.suggestPurpose(noteId);
+        const data = res.data;
         if (!res.ok) throw new Error("PURPOSE_CANDIDATES_UNAVAILABLE");
         if (cancelled) return;
         setLoadedNoteId(noteId);
@@ -193,7 +190,7 @@ export function PurposeConfirmPanel({
     return () => {
       cancelled = true;
     };
-  }, [currentPurpose, noteId, retryKey]);
+  }, [currentPurpose, dataSource, noteId, retryKey]);
 
   function completeBrowserSave(selectedPurpose: PurposeValue, reason?: string) {
     if (!saveBrowserPurposeOverride(noteId, selectedPurpose)) {
@@ -226,16 +223,8 @@ export function PurposeConfirmPanel({
     }
 
     try {
-      const res = await fetch("/api/mingxi/purpose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ noteId, purpose, action: "confirm" }),
-      });
-      const data = (await res.json()) as {
-        code?: string;
-        purposeLabel?: string;
-        note?: { id: string; title: string; purposeLabel: string };
-      };
+      const res = await dataSource.confirmPurpose({ noteId, purpose, action: "confirm" });
+      const data = res.data;
       if (!res.ok) {
         if (data.code === "STORAGE_READ_ONLY" || res.status >= 500) {
           completeBrowserSave(
@@ -449,6 +438,7 @@ export function OrganizePanel({
   currentPurpose: string;
   onDone?: (piece: OrganizePieceView) => void;
 }) {
+  const dataSource = useMingxiDataSource();
   const [purpose, setPurpose] = useState(currentPurpose || "资料收藏");
   const [busy, setBusy] = useState(false);
   const [piece, setPiece] = useState<OrganizePieceView | null>(null);
@@ -458,12 +448,8 @@ export function OrganizePanel({
     setBusy(true);
     setErr("");
     try {
-      const res = await fetch("/api/mingxi/organize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ noteId, purpose, confirmOnly }),
-      });
-      const data = await res.json();
+      const res = await dataSource.organizeNote({ noteId, purpose, confirmOnly });
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || "成件失败");
       if (confirmOnly) {
         setPiece({
@@ -540,6 +526,7 @@ export function LookupPanel({
   sessionId: string | null;
   onWriteBack?: (logicLine?: { nodes: unknown[]; edges: unknown[] }) => void;
 }) {
+  const dataSource = useMingxiDataSource();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -551,12 +538,8 @@ export function LookupPanel({
     setBusy(true);
     setMsg("");
     try {
-      const res = await fetch("/api/mingxi/lookup/writeback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, card, approved }),
-      });
-      const data = await res.json();
+      const res = await dataSource.writeBackLookup({ sessionId, card, approved });
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || "写回失败");
       setMsg(approved ? data.summary || "已写回" : "已拒绝写回");
       if (approved) onWriteBack?.(data.logicLine);
@@ -679,6 +662,7 @@ export function CapturePanel({
 }: {
   onCaptured?: (note?: { id: string; title?: string; purposeLabel?: string }) => void;
 }) {
+  const dataSource = useMingxiDataSource();
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [purposeLabel, setPurposeLabel] = useState<(typeof CAPTURE_PURPOSES)[number]>("待定");
@@ -692,19 +676,15 @@ export function CapturePanel({
     setLog("");
     setPendingNoteId(null);
     try {
-      const res = await fetch("/api/mingxi/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: url.trim() || undefined,
-          text: text.trim() || undefined,
-          purposeLabel,
-          enrichVision: false,
-          tag: true,
-          persist: true,
-        }),
+      const res = await dataSource.capture({
+        url: url.trim() || undefined,
+        text: text.trim() || undefined,
+        purposeLabel,
+        enrichVision: false,
+        tag: true,
+        persist: true,
       });
-      const data = await res.json();
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || "捕获失败");
       const notePurpose = String(data.note?.purposeLabel || purposeLabel);
       setLog(

@@ -16,7 +16,7 @@ import type {
   LookupCardView,
   PurposeCandidateView,
 } from "../components/mingxi/ProductAgentPanels";
-import type { ThinkApiResponse } from "../lib/mingxi/web/think-replay-live";
+import type { ThinkApiEdge, ThinkApiNode, ThinkApiResponse } from "../lib/mingxi/web/think-replay-live";
 
 export interface PortResult<T> {
   ok: boolean;
@@ -179,7 +179,8 @@ export interface LookupWriteBackRequest {
 
 export interface LookupWriteBackData extends PortErrorBody {
   summary?: string;
-  logicLine?: ThinkTurnData["logicLine"];
+  /** 成功时总是带完整的图（原接口 lookup/writeback 用 lineToLogicGraph 生成，没有时为空数组）。 */
+  logicLine?: { nodes: ThinkApiNode[]; edges: ThinkApiEdge[] };
 }
 
 export interface CaptureRequest {
@@ -194,7 +195,8 @@ export interface CaptureRequest {
 export interface CaptureData extends PortErrorBody {
   materialId?: string;
   domainPath?: string[];
-  note?: { id?: string; title?: string; purposeLabel?: string } & Record<string, unknown>;
+  /** 成功时是入库后的笔记（原接口 capture 返回 runCapturePipeline 的 note，带 id）。 */
+  note?: { id: string; title?: string; purposeLabel?: string } & Record<string, unknown>;
 }
 
 export type EvalRunData = EvalReportView & PortErrorBody;

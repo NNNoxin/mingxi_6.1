@@ -24,6 +24,7 @@ import {
 import { noteMatchesDomainPrefix } from "../../lib/mingxi/web/domain-coverage";
 import { onTourCmd } from "../../lib/mingxi/demo/tour-bus";
 import type { NoteMedia } from "../../lib/mingxi/web/note-media";
+import { useMingxiDataSource } from "../../data-source/context";
 import type {
   VerificationOrigin,
   VerificationRecord,
@@ -604,6 +605,7 @@ function NoteCard({
 }
 
 export function WebWorkbench() {
+  const dataSource = useMingxiDataSource();
   const [view, setView] = useState<View>("library");
   const [notes, setNotes] = useState<LibraryNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -693,10 +695,8 @@ export function WebWorkbench() {
   const loadLibrary = useCallback(async (p = purpose, query = q) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      const res = await fetch(`/api/mingxi/library?${params}`);
-      const data = await res.json();
+      const res = await dataSource.listLibrary(query.trim() ? { q: query.trim() } : {});
+      const data = res.data;
       const overrides = loadPurposeOverrides();
       const merged = ((data.notes || []) as LibraryNote[]).map((note) => {
         const override = overrides[note.id];
@@ -707,7 +707,7 @@ export function WebWorkbench() {
     } finally {
       setLoading(false);
     }
-  }, [purpose, q]);
+  }, [dataSource, purpose, q]);
 
   const visibleNotes = useMemo(
     () => notes.filter((n) => noteMatchesDomainPrefix(n, domainFilter)),
@@ -805,8 +805,8 @@ export function WebWorkbench() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const res = await fetch("/api/mingxi/profile");
-      const data = await res.json();
+      const res = await dataSource.getProfile();
+      const data = res.data;
       if (res.ok) {
         setProfileInfo({
           autoLearnedWeek: data.autoLearnedWeek || 0,
@@ -819,7 +819,7 @@ export function WebWorkbench() {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [dataSource]);
 
   useEffect(() => {
     void loadProfile();
@@ -948,11 +948,8 @@ export function WebWorkbench() {
     const scope = opt?.scopeNodeId || scopeNodeId || undefined;
     try {
       const packed = await serializeAttachments(attachments);
-      const res = await fetch("/api/mingxi/think", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: ac.signal,
-        body: JSON.stringify({
+      const res = await dataSource.thinkTurn(
+        {
           message: text,
           demo: useDemo,
           mode: agentMode === "ask" ? "llm_graph" : "agent",
@@ -967,9 +964,10 @@ export function WebWorkbench() {
           lockedNodeIds: lockedIds,
           scopeNodeId: scope,
           intentHint: opt?.intentHint || intentHint || undefined,
-        }),
-      });
-      const data = await res.json();
+        },
+        { signal: ac.signal },
+      );
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || data.clarifyingQuestion || "请求失败");
       setScopeNodeId(null);
       if (data.lookupCard) setLookupCard(data.lookupCard);
@@ -1176,15 +1174,11 @@ export function WebWorkbench() {
     if (!pending?.sessionId || confirming) return;
     setConfirming(true);
     try {
-      const res = await fetch("/api/mingxi/think/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: pending.sessionId,
-          pendingId: pending.pendingId,
-        }),
+      const res = await dataSource.approveLine({
+        sessionId: pending.sessionId,
+        pendingId: pending.pendingId,
       });
-      const data = await res.json();
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || "确认失败");
       setNodes(data.logicLine?.nodes || nodes);
       setEdges(data.logicLine?.edges || edges);
@@ -1241,15 +1235,11 @@ export function WebWorkbench() {
     if (!pending?.sessionId || confirming) return;
     setConfirming(true);
     try {
-      const res = await fetch("/api/mingxi/think/reject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: pending.sessionId,
-          pendingId: pending.pendingId,
-        }),
+      const res = await dataSource.rejectLine({
+        sessionId: pending.sessionId,
+        pendingId: pending.pendingId,
       });
-      const data = await res.json();
+      const data = res.data;
       if (!res.ok) throw new Error(data.error || "放弃失败");
       setPending(null);
       setLineStatus("rejected");
@@ -1299,11 +1289,7 @@ export function WebWorkbench() {
   }
 
   async function rollbackProfile(entryId: string) {
-    await fetch("/api/mingxi/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "rollback", entryId }),
-    });
+    await dataSource.profileAction({ action: "rollback", entryId });
     void loadProfile();
   }
 
@@ -1530,21 +1516,17 @@ export function WebWorkbench() {
     const current = list.find((w) => w.id === activeId);
     if (!current) return;
     try {
-      await fetch("/api/mingxi/think/memory", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workspace: current,
-          activeWsId: activeId,
-          interaction: interaction
-            ? {
-                kind: interaction.kind,
-                workspaceId: activeId,
-                utterance: interaction.utterance,
-                detail: interaction.detail,
-              }
-            : undefined,
-        }),
+      await dataSource.putThinkMemory({
+        workspace: current,
+        activeWsId: activeId,
+        interaction: interaction
+          ? {
+              kind: interaction.kind,
+              workspaceId: activeId,
+              utterance: interaction.utterance,
+              detail: interaction.detail,
+            }
+          : undefined,
       });
     } catch {
       /* 离线仍保留 localStorage */
@@ -1669,8 +1651,8 @@ export function WebWorkbench() {
 
       // 2) 服务端记忆（若 vinext 可读盘则覆盖/合并）
       try {
-        const res = await fetch("/api/mingxi/think/memory");
-        const data = await res.json();
+        const res = await dataSource.getThinkMemory();
+        const data = res.data;
         if (!cancelled && data?.ok) {
           const remote = (data.workspaces || []) as ThinkWorkspace[];
           const nextActive = data.activeWsId || activeWsId;
@@ -2764,8 +2746,8 @@ export function WebWorkbench() {
               void (async () => {
                 setEvalBusy(true);
                 try {
-                  const res = await fetch("/api/mingxi/eval", { method: "POST" });
-                  const data = await res.json();
+                  const res = await dataSource.runEval();
+                  const data = res.data;
                   if (!res.ok) throw new Error(data.error || "评测失败");
                   setEvalReport(data);
                 } catch (e) {

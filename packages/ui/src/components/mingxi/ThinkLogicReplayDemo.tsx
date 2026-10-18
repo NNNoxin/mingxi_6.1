@@ -27,6 +27,7 @@ import {
   WebDetailDrawer,
 } from "./ThinkLogicNoteUi";
 import { onTourCmd } from "../../lib/mingxi/demo/tour-bus";
+import { useMingxiDataSource } from "../../data-source/context";
 import {
   layoutDemoGraph,
   layoutThinkGraph,
@@ -205,6 +206,7 @@ function initSessionMap(): { map: Record<string, SessionRuntime>; activeId: stri
 }
 
 export function ThinkLogicReplayDemo() {
+  const dataSource = useMingxiDataSource();
   const boot = useMemo(() => initSessionMap(), []);
   const [sessions, setSessions] = useState<Record<string, SessionRuntime>>(boot.map);
   const [activeId, setActiveId] = useState(boot.activeId);
@@ -759,11 +761,8 @@ export function ThinkLogicReplayDemo() {
     setChat((prev) => [...prev, userItem, thinkingItem]);
 
     try {
-      const response = await fetch("/api/mingxi/think", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: ac.signal,
-        body: JSON.stringify({
+      const response = await dataSource.thinkTurn(
+        {
           message,
           history,
           mode: "agent",
@@ -775,9 +774,10 @@ export function ThinkLogicReplayDemo() {
           workspaceTitle: runSession?.title,
           workspaceSubtitle: runSession?.subtitle,
           demo: Boolean(runSession?.isSample),
-        }),
-      });
-      const data = (await response.json()) as ThinkApiResponse;
+        },
+        { signal: ac.signal },
+      );
+      const data: ThinkApiResponse = response.data;
       if (!response.ok || data.ok === false) {
         throw new Error(data.error || data.clarifyingQuestion || "梳理请求失败");
       }

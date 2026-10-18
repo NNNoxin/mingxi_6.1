@@ -18,5 +18,9 @@
 |---|---|---|---|---|---|
 | 1 | 21 处导入语句（见 manifest） | `@/…` 别名改为包内相对路径 | 1 · 导入路径 | 否 | 首次导入 |
 | 2 | `src/types/ambient.d.ts`（新增） | 声明原版由 Next 自动生成的全局类型与 `*.css` 副作用导入 | 新增类型声明，不改原文件 | 否 | 首次导入 |
-| 3 | `src/data-source/port.ts`、`src/data-source/context.tsx`（新增） | 数据源端口接口与 React Provider；本次只新增，原组件尚未改用（接缝逐个接入时各自登记） | 2 · 数据源接缝 | 否 | 本次提交 |
-| 4 | `tsconfig.build.json`（新增）、`package.json` 导出 | 只生成类型声明供其他包做类型检查；运行时仍直接使用源文件 | 构建配置，不改原文件 | 否 | 本次提交 |
+| 3 | `src/data-source/port.ts`、`src/data-source/context.tsx`（新增） | 数据源端口接口与 React Provider | 2 · 数据源接缝 | 否 | `5e2cff4` |
+| 4 | `tsconfig.build.json`（新增）、`package.json` 导出 | 只生成类型声明供其他包做类型检查；运行时仍直接使用源文件 | 构建配置，不改原文件 | 否 | `5e2cff4` |
+| 5 | `WebWorkbench.tsx`（9 处）、`ProductAgentPanels.tsx`（5 处）、`ThinkLogicReplayDemo.tsx`（1 处） | 15 处 `fetch("/api/mingxi/…")` + `res.json()` 改为 `useMingxiDataSource()` 的对应方法，请求内容逐字段不变，`res.ok` / `res.status` / 错误体的判断分支不变；组件开头取一次数据源，`loadLibrary`、`loadProfile` 与用途建议的依赖数组加入 `dataSource`（引用固定，不会多触发）；用途建议、用途确认两处原来对 `res.json()` 结果的内联类型断言由端口类型代替 | 2 · 数据源接缝 | 否 | 本次提交 |
+| 6 | `package.json` | 声明 `tailwindcss` 依赖：`styles/globals.css` 第一行 `@import "tailwindcss"`，样式文件现在在本包里，从本包解析 | 依赖声明，不改原文件 | 否 | 本次提交 |
+
+保留未改的两处 `fetch`：`WebWorkbench.tsx` 读取静态样例 `/data/mingxi-think-samples.json`、`NoteMediaView.tsx` 读取笔记快照，二者都是站点自带的静态文件，不是后端接口。
