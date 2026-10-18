@@ -1,0 +1,23 @@
+# 依赖与构建产物
+node_modules/
+dist/
+.next/
+out/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# 密钥与本地环境（永不提交）
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 测试与调试输出
+playwright-report/
+test-results/
+e2e/.artifacts/
+
+# 系统文件
+.DS_Store

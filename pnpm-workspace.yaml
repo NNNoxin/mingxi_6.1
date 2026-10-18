@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
+# 依赖策略：缺失的 peer 依赖直接报错（不自动补装），只允许已审阅的包执行安装脚本。
+strictPeerDependencies: true
+autoInstallPeers: false
+onlyBuiltDependencies:
+  - esbuild

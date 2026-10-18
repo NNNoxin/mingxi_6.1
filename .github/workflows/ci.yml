@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.1-pg16
+        env:
+          POSTGRES_USER: mingxi
+          POSTGRES_PASSWORD: mingxi_ci_only
+          POSTGRES_DB: mingxi_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mingxi -d mingxi_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: valkey/valkey:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://mingxi:mingxi_ci_only@127.0.0.1:5432/mingxi_test
+      TEST_REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: 格式、lint、类型检查、单元测试
+        run: pnpm verify
+      - name: 集成测试（真实 PostgreSQL + pgvector、Redis）
+        run: pnpm test:integration
+      - name: 生产构建并执行迁移
+        run: |
+          pnpm --filter @mingxi/server build
+          DATABASE_URL="$TEST_DATABASE_URL" node apps/server/dist/migrate.js

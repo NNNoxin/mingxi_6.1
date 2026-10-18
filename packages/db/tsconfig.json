@@ -1,0 +1,4 @@
+{
+  "extends": "@mingxi/config/tsconfig/node.json",
+  "include": ["src", "*.config.ts"]
+}

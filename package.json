@@ -1,0 +1,26 @@
+{
+  "name": "mingxi",
+  "private": true,
+  "description": "明晰 6.1：AI 智能笔记产品（梳逻辑 Agent + 知识补全 Agent）",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration --concurrency=1",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify": "pnpm format:check && turbo run lint typecheck test"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "turbo": "2.11.9",
+    "typescript": "6.0.3"
+  }
+}
