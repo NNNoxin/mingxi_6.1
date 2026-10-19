@@ -5,6 +5,8 @@
 //    否则说明捕获本身不确定，这次对比无效。
 // 2. 像素：新版与任意一次原版捕获的差异 ≤ 容差即一致。容差 = max(基础阈值 0.1%, 原版多次捕获之间在这一步的最大差异)，
 //    即“新版和原版的差别不超过原版和它自己的差别”。放宽的步骤在报告中逐一列出。
+// 3. 请求：--forbid-requests 给出路径前缀（逗号分隔），新版在导览全程发出的页面与接口请求不得以这些前缀开头。
+//    CI 对演示站传 /api/：演示站只读站内的剧本数据，不连后端（红线 4）。
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -14,7 +16,15 @@ import { diffScreenshots, type PixelDiff } from "./pixel-diff";
 interface StepsFile {
   total: number;
   network?: { misses: string[] };
-  steps: { index: number; file: string; domFile: string; title: string; path: string; stable: boolean }[];
+  steps: {
+    index: number;
+    file: string;
+    domFile: string;
+    title: string;
+    path: string;
+    stable: boolean;
+    requests: { method: string; path: string }[];
+  }[];
 }
 
 interface Run {
@@ -28,6 +38,7 @@ const { values } = parseArgs({
     actual: { type: "string" },
     out: { type: "string" },
     "max-ratio": { type: "string", default: "0.001" },
+    "forbid-requests": { type: "string" },
   },
   allowPositionals: true,
 });
@@ -65,6 +76,18 @@ for (const run of [...expectedRuns, actual]) {
   }
   if (run.steps.network?.misses.length) {
     failures.push(`${run.dir} 不是在完整网络回放下捕获的（${run.steps.network.misses.length} 个请求未命中）`);
+  }
+}
+
+const forbidden = (values["forbid-requests"] ?? "")
+  .split(",")
+  .map((prefix) => prefix.trim())
+  .filter(Boolean);
+for (const step of actual.steps.steps) {
+  for (const request of step.requests) {
+    if (forbidden.some((prefix) => request.path.startsWith(prefix))) {
+      failures.push(`第 ${step.index + 1} 步：新版发出了不允许的请求 ${request.method} ${request.path}`);
+    }
   }
 }
 

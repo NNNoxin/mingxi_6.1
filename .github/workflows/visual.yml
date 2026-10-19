@@ -86,7 +86,7 @@ jobs:
 
       - name: 对比
         working-directory: e2e
-        run: pnpm compare --expected .artifacts/base-1,.artifacts/base-2,.artifacts/base-3 --actual .artifacts/candidate --out .artifacts/diff
+        run: pnpm compare --expected .artifacts/base-1,.artifacts/base-2,.artifacts/base-3 --actual .artifacts/candidate --out .artifacts/diff --forbid-requests /api/
 
       - name: 上传对比报告（失败时）
         if: failure()
