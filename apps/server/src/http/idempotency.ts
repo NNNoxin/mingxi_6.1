@@ -30,7 +30,9 @@ export function createRedisIdempotencyStore(redis: Redis, prefix = "idem:"): Ide
 
 type IdempotencyRecord =
   | { state: "in_progress"; fingerprint: string }
-  | { state: "done"; fingerprint: string; status: number; contentType: string | null; body: string };
+  | { state: "done"; fingerprint: string; status: number; contentType: string | null; body: string }
+  /** 已完成，但结果不保存正文（太大或不是文本），重复提交如实告知而不是再执行一次。 */
+  | { state: "done_unreplayable"; fingerprint: string; status: number };
 
 const KEY_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 /** 结果保存 24 小时。 */
@@ -42,6 +44,13 @@ const DONE_TTL_SECONDS = 24 * 60 * 60;
 const IN_PROGRESS_TTL_SECONDS = 5 * 60;
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const NULL_BODY_STATUSES = new Set([204, 205, 304]);
+/**
+ * 可重放正文的上限。幂等记录存在 Redis 里，零成本部署的 Redis 只有约 25 MB（docs/02 EC-P10）；
+ * 写接口的正常响应只是几百字节的 ID 与状态，超过上限的结果只记录“已完成”。
+ */
+export const MAX_REPLAY_BODY_BYTES = 64 * 1024;
+/** 只有文本类响应按文本保存与重放；二进制按文本读写会损坏。 */
+const REPLAYABLE_TYPE = /^(application\/(json|problem\+json)|text\/)/i;
 
 /**
  * Idempotency-Key（docs/02 §2.3）：写接口带上这个头时，同一用户同一个键在 24 小时内只执行一次，
@@ -79,6 +88,11 @@ export function idempotency(store: IdempotencyStore): MiddlewareHandler<Protecte
       }
       if (record.state === "in_progress")
         throw new AppError("conflict", "相同的请求正在处理，请稍后查看结果");
+      if (record.state === "done_unreplayable") {
+        throw new AppError("conflict", "相同的请求已经完成，结果无法重放，请刷新查看最新状态", {
+          status: record.status,
+        });
+      }
       c.header("Idempotent-Replayed", "true");
       if (record.contentType) c.header("Content-Type", record.contentType);
       if (NULL_BODY_STATUSES.has(record.status)) return c.body(null, record.status as StatusCode);
@@ -89,13 +103,7 @@ export function idempotency(store: IdempotencyStore): MiddlewareHandler<Protecte
       await store.release(storeKey);
       return;
     }
-    const done: IdempotencyRecord = {
-      state: "done",
-      fingerprint,
-      status: c.res.status,
-      contentType: c.res.headers.get("Content-Type"),
-      body: await c.res.clone().text(),
-    };
+    const done = await finishedRecord(c.res, fingerprint);
     try {
       await store.put(storeKey, JSON.stringify(done), DONE_TTL_SECONDS);
     } catch (error) {
@@ -104,4 +112,19 @@ export function idempotency(store: IdempotencyStore): MiddlewareHandler<Protecte
     }
     return;
   };
+}
+
+async function finishedRecord(
+  response: Response,
+  fingerprint: string,
+): Promise<Exclude<IdempotencyRecord, { state: "in_progress" }>> {
+  const { status } = response;
+  const contentType = response.headers.get("Content-Type");
+  if (NULL_BODY_STATUSES.has(status)) return { state: "done", fingerprint, status, contentType, body: "" };
+  if (!contentType || !REPLAYABLE_TYPE.test(contentType))
+    return { state: "done_unreplayable", fingerprint, status };
+  const body = await response.clone().text();
+  if (Buffer.byteLength(body, "utf8") > MAX_REPLAY_BODY_BYTES)
+    return { state: "done_unreplayable", fingerprint, status };
+  return { state: "done", fingerprint, status, contentType, body };
 }

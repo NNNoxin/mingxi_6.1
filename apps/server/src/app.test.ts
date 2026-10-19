@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { ApiErrorBody, LivenessResponse, ReadinessResponse } from "@mingxi/contracts";
 import { createApp, type AppOptions } from "./app";
+import { MAX_REPLAY_BODY_BYTES } from "./http/idempotency";
 import { AppError } from "./errors";
 import { createLogger } from "./logger";
 import { fakeAuth, memoryIdempotencyStore, memoryRateLimiter, noDatabase, testUser } from "./test-doubles";
@@ -359,6 +360,39 @@ describe("幂等键", () => {
     expect(again.status).toBe(204);
     expect(again.headers.get("Idempotent-Replayed")).toBe("true");
     expect(calls).toBe(2);
+  });
+
+  it("超过上限的结果不保存正文：重复提交得到 409，也不会再执行一次", async () => {
+    let calls = 0;
+    const { post, store } = writeApp(() => {
+      calls += 1;
+      return Response.json({ items: "x".repeat(MAX_REPLAY_BODY_BYTES) }, { status: 201 });
+    });
+    expect((await post("reader", "key-big-01")).status).toBe(201);
+    const again = await post("reader", "key-big-01");
+    expect(again.status).toBe(409);
+    expect(ApiErrorBody.parse(await again.json()).error).toMatchObject({
+      message: "相同的请求已经完成，结果无法重放，请刷新查看最新状态",
+      details: { status: 201 },
+    });
+    expect(calls).toBe(1);
+    // Redis 里只留下几十字节的状态记录。
+    const stored = [...store.entries.values()].join("");
+    expect(stored.length).toBeLessThan(200);
+  });
+
+  it("非文本结果不按文本重放", async () => {
+    let calls = 0;
+    const { post } = writeApp(() => {
+      calls += 1;
+      return new Response(new Uint8Array([0xff, 0xfe, 0x00]), {
+        status: 201,
+        headers: { "Content-Type": "application/octet-stream" },
+      });
+    });
+    expect((await post("reader", "key-bin-01")).status).toBe(201);
+    expect((await post("reader", "key-bin-01")).status).toBe(409);
+    expect(calls).toBe(1);
   });
 
   it("键按用户隔离；格式不合法的键返回 400", async () => {
