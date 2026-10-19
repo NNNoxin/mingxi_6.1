@@ -1,18 +1,23 @@
 import { randomBytes } from "node:crypto";
 import type { AddressInfo } from "node:net";
 import { Redis } from "ioredis";
+import { Hono } from "hono";
 import { simpleParser } from "mailparser";
 import { pino } from "pino";
 import { SMTPServer } from "smtp-server";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withUserTransaction } from "@mingxi/db";
 import { prepareIntegrationDatabase, type IntegrationDatabase } from "@mingxi/db/testing";
 import { createApp } from "../app";
+import { createRedisIdempotencyStore } from "../http/idempotency";
+import type { ProtectedEnv } from "../http/session";
 import { dispatchDueEmails } from "../mail/outbox";
 import { createSmtpTransport, type MailTransport } from "../mail/transport";
 import { createRedisRateLimiter } from "../rate-limit";
-import { createAuth } from "./auth";
+import { authPort, createAuth } from "./auth";
 
-// 认证全流程（docs/02 §4.1、EC-U1），连真实 PostgreSQL、Redis 与一个本进程内的 SMTP 服务。
+// 认证全流程（docs/02 §4.1、EC-U1）与业务接口鉴权（docs/02 §2.3、§4.4），
+// 连真实 PostgreSQL、Redis 与一个本进程内的 SMTP 服务。
 
 const REDIS_URL = process.env.TEST_REDIS_URL;
 if (!REDIS_URL) throw new Error("集成测试需要 TEST_REDIS_URL");
@@ -55,6 +60,9 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => smtp.listen(0, "127.0.0.1", resolve));
   const { port } = smtp.server.address() as AddressInfo;
   transport = createSmtpTransport(`smtp://127.0.0.1:${String(port)}`, "明晰 <no-reply@test.local>");
+  // 每次运行用独立前缀，避免上一次运行留下的限流计数与幂等记录影响本次。
+  const runPrefix = randomBytes(4).toString("hex");
+  const rateLimiter = createRedisRateLimiter(redis, `rl:test:${runPrefix}:`);
   const auth = createAuth({
     env: {
       NODE_ENV: "test",
@@ -66,12 +74,39 @@ beforeAll(async () => {
       GOOGLE_CLIENT_SECRET: undefined,
     },
     pool: db.appPool,
-    // 每次运行用独立前缀，避免上一次运行留下的限流计数影响本次。
-    rateLimiter: createRedisRateLimiter(redis, `rl:test:${randomBytes(4).toString("hex")}:`),
+    rateLimiter,
     logger: silent,
   });
-  app = createApp({ logger: silent, version: "it", probes: [], auth });
+  app = createApp({
+    logger: silent,
+    version: "it",
+    probes: [],
+    auth: authPort(auth),
+    publicOrigin: PUBLIC_URL,
+    trustedProxyHops: 0,
+    rateLimiter,
+    idempotencyStore: createRedisIdempotencyStore(redis, `idem:test:${runPrefix}:`),
+    withUserTransaction: (userId) => (work) => withUserTransaction(db.appPool, userId, work),
+    apiRateLimit: { window: 60, max: 30 },
+  });
+  // 只在测试里挂的业务接口：注册在 createApp 之后，同样经过登录、来源、限流与幂等中间件。
+  app.route("/api/test", testRoutes());
 });
+
+let counter = 0;
+function testRoutes() {
+  return new Hono<ProtectedEnv>()
+    .get("/whoami", async (c) => {
+      const { rows } = await c.var.withUserTx((client) =>
+        client.query<{ id: string }>("SELECT app.current_user_id()::text AS id"),
+      );
+      return c.json({ userId: c.var.user.id, dbUserId: rows[0]?.id });
+    })
+    .post("/counter", (c) => {
+      counter += 1;
+      return c.json({ counter }, 201);
+    });
+}
 
 afterAll(async () => {
   redis.disconnect();
@@ -93,22 +128,46 @@ function nextIp(): string {
   return `203.0.113.${String(ipCounter)}`;
 }
 
+interface CallInit {
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+}
+
+/**
+ * 一台浏览器：保存 Cookie，从固定的地址连到服务（直连地址由 @hono/node-server 的连接信息给出，
+ * 测试里通过 app.request 的第三个参数传入同样形状的数据）。
+ */
 class Device {
   readonly cookies = new Map<string, string>();
   constructor(readonly ip: string = nextIp()) {}
 
-  async call(path: string, init: { method?: string; body?: unknown } = {}) {
-    const headers: Record<string, string> = { origin: PUBLIC_URL, "x-forwarded-for": this.ip };
+  /** 调认证接口（/api/auth/*）；以 http 开头的完整地址（邮件里的链接）原样请求。 */
+  call(path: string, init: CallInit = {}) {
+    return this.request(path.startsWith("http") ? path : `${PUBLIC_URL}/api/auth${path}`, init);
+  }
+
+  /** 调业务接口（/api/*）。 */
+  api(path: string, init: CallInit = {}) {
+    return this.request(`${PUBLIC_URL}/api${path}`, init);
+  }
+
+  private async request(url: string, init: CallInit) {
+    const headers: Record<string, string> = { origin: PUBLIC_URL, ...init.headers };
     if (this.cookies.size) {
       headers.cookie = [...this.cookies].map(([name, value]) => `${name}=${value}`).join("; ");
     }
     if (init.body !== undefined) headers["content-type"] = "application/json";
-    const response = await app.request(path.startsWith("http") ? path : `${PUBLIC_URL}/api/auth${path}`, {
-      method: init.method ?? (init.body === undefined ? "GET" : "POST"),
-      headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      redirect: "manual",
-    });
+    const response = await app.request(
+      url,
+      {
+        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        headers,
+        body: init.body === undefined ? undefined : JSON.stringify(init.body),
+        redirect: "manual",
+      },
+      { incoming: { socket: { remoteAddress: this.ip } } },
+    );
     for (const cookie of response.headers.getSetCookie()) {
       const [pair] = cookie.split(";");
       const index = pair?.indexOf("=") ?? -1;
@@ -318,6 +377,162 @@ describe("找回密码与会话", () => {
     // 换一个 IP 不受影响。
     const legit = await new Device().call("/sign-in/email", { body: { email, password: PASSWORD } });
     expect(legit.status).toBe(200);
+  });
+
+  it("伪造 X-Forwarded-For 换不出新的限流计数：按实际连接地址计", async () => {
+    const { email } = await registerAndVerify();
+    const attacker = new Device();
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const result = await attacker.call("/sign-in/email", {
+        body: { email, password: `wrong-${String(i)}-xx` },
+        headers: {
+          "x-forwarded-for": `198.51.100.${String(i + 1)}`,
+          "x-mingxi-client-ip": `192.0.2.${String(i + 1)}`,
+        },
+      });
+      statuses.push(result.status);
+    }
+    expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
+    // 会话记录的也是实际连接地址。
+    const signedIn = new Device();
+    await signedIn.call("/sign-in/email", {
+      body: { email, password: PASSWORD },
+      headers: { "x-forwarded-for": "1.2.3.4" },
+    });
+    const { rows } = await db.appPool.query<{ ip_address: string }>(
+      `SELECT s.ip_address FROM auth.sessions s JOIN auth.users u ON u.id = s.user_id
+        WHERE u.email = $1 ORDER BY s.created_at DESC LIMIT 1`,
+      [email],
+    );
+    expect(rows[0]?.ip_address).toBe(signedIn.ip);
+  });
+});
+
+/** Cookie 里是“令牌.签名”，取出令牌用于直接定位这台设备的会话行。 */
+function sessionTokenOf(device: Device): string {
+  const cookie = decodeURIComponent(device.cookies.get("mingxi.session_token") ?? "");
+  const token = cookie.slice(0, cookie.lastIndexOf("."));
+  if (!token) throw new Error("这台设备没有会话 Cookie");
+  return token;
+}
+
+describe("业务接口（真实会话）", () => {
+  async function signedInDevice() {
+    const { email } = await registerAndVerify();
+    const device = new Device();
+    const signIn = await device.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    expect(signIn.status).toBe(200);
+    const { rows } = await db.appPool.query<{ id: string }>("SELECT id FROM auth.users WHERE email = $1", [
+      email,
+    ]);
+    const userId = rows[0]?.id ?? "";
+    return { email, device, userId };
+  }
+
+  it("未登录 401；登录后 /api/me 返回本人信息；业务事务以本人身份运行", async () => {
+    expect((await new Device().api("/me")).status).toBe(401);
+    const { email, device, userId } = await signedInDevice();
+    const me = await device.api("/me");
+    expect(me.status).toBe(200);
+    expect(me.json).toEqual({ id: userId, email, name: "测试用户", emailVerified: true, role: "user" });
+    const whoami = await device.api("/test/whoami");
+    expect(whoami.json).toEqual({ userId, dbUserId: userId });
+  });
+
+  it("账号冻结后立即 403（EC-U4）", async () => {
+    const { device, userId } = await signedInDevice();
+    await db.appPool.query("UPDATE auth.users SET status = 'frozen' WHERE id = $1", [userId]);
+    const response = await device.api("/me");
+    expect(response.status).toBe(403);
+    expect(response.json).toMatchObject({
+      error: { code: "forbidden", details: { reason: "account_frozen" } },
+    });
+  });
+
+  it("会话超过一天未续期时，访问业务接口顺带续期并写回新 Cookie", async () => {
+    const { device } = await signedInDevice();
+    const token = sessionTokenOf(device);
+    // 模拟这台设备的会话已创建两天：剩余 5 天，超过“每天续期一次”的间隔。
+    await db.appPool.query(
+      "UPDATE auth.sessions SET expires_at = now() + interval '5 days' WHERE token = $1",
+      [token],
+    );
+    const response = await device.api("/me");
+    expect(response.status).toBe(200);
+    const renewed = response.headers
+      .getSetCookie()
+      .find((cookie) => cookie.startsWith("mingxi.session_token="));
+    expect(renewed).toContain(`Max-Age=${String(7 * 24 * 60 * 60)}`);
+    const { rows } = await db.appPool.query<{ days: string }>(
+      "SELECT extract(epoch FROM expires_at - now()) / 86400 AS days FROM auth.sessions WHERE token = $1",
+      [token],
+    );
+    expect(Number(rows[0]?.days)).toBeGreaterThan(6.9);
+  });
+
+  it("会话过期后 401，并清除浏览器里的会话 Cookie", async () => {
+    const { device } = await signedInDevice();
+    await db.appPool.query(
+      "UPDATE auth.sessions SET expires_at = now() - interval '1 minute' WHERE token = $1",
+      [sessionTokenOf(device)],
+    );
+    const response = await device.api("/me");
+    expect(response.status).toBe(401);
+    expect(device.cookies.has("mingxi.session_token")).toBe(false);
+  });
+
+  it("会话在续期途中被删除：401 并清除 Cookie，而不是服务器错误", async () => {
+    const { device } = await signedInDevice();
+    const token = sessionTokenOf(device);
+    await db.appPool.query(
+      "UPDATE auth.sessions SET expires_at = now() + interval '5 days' WHERE token = $1",
+      [token],
+    );
+    // 用触发器让这一行的续期更新落空，等同于“读到会话之后、续期之前，会话被另一个请求删除”。
+    const trigger = `skip_renewal_${randomBytes(4).toString("hex")}`;
+    await db.ownerPool.query(
+      `CREATE FUNCTION auth.${trigger}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$`,
+    );
+    await db.ownerPool.query(
+      `CREATE TRIGGER ${trigger} BEFORE UPDATE ON auth.sessions FOR EACH ROW WHEN (OLD.token = '${token}') EXECUTE FUNCTION auth.${trigger}()`,
+    );
+    try {
+      const response = await device.api("/me");
+      expect(response.status).toBe(401);
+      expect(device.cookies.has("mingxi.session_token")).toBe(false);
+    } finally {
+      await db.ownerPool.query(`DROP TRIGGER ${trigger} ON auth.sessions`);
+      await db.ownerPool.query(`DROP FUNCTION auth.${trigger}()`);
+    }
+  });
+
+  it("幂等键（Redis）：重复提交只执行一次；另一个用户用同一个键互不影响", async () => {
+    const a = await signedInDevice();
+    const b = await signedInDevice();
+    const key = { "idempotency-key": `order-${randomBytes(6).toString("hex")}` };
+    const first = await a.device.api("/test/counter", { body: {}, headers: key });
+    const replay = await a.device.api("/test/counter", { body: {}, headers: key });
+    expect(first.status).toBe(201);
+    expect(replay.json).toEqual(first.json);
+    expect(replay.headers.get("idempotent-replayed")).toBe("true");
+    const fromB = await b.device.api("/test/counter", { body: {}, headers: key });
+    expect(fromB.headers.get("idempotent-replayed")).toBeNull();
+    expect((fromB.json as { counter: number }).counter).toBe((first.json as { counter: number }).counter + 1);
+  });
+
+  it("跨站写请求 403；按用户限流在 Redis 里计数", async () => {
+    const { device } = await signedInDevice();
+    const forged = await device.api("/test/counter", {
+      body: {},
+      headers: { origin: "https://evil.example" },
+    });
+    expect(forged.status).toBe(403);
+    const statuses: number[] = [];
+    // 跨站请求在来源检查就被拒绝，不占用限流次数：上限 30 次，第 31 次被拒绝。
+    for (let i = 0; i < 31; i += 1) statuses.push((await device.api("/me")).status);
+    expect(statuses.filter((status) => status === 200)).toHaveLength(30);
+    expect(statuses.at(-1)).toBe(429);
   });
 });
 

@@ -1,8 +1,9 @@
 import { serve } from "@hono/node-server";
-import { assertRuntimeRoleIsolated } from "@mingxi/db";
+import { assertRuntimeRoleIsolated, withUserTransaction } from "@mingxi/db";
 import { createApp } from "./app";
-import { createAuth } from "./auth/auth";
+import { authPort, createAuth } from "./auth/auth";
 import { loadEnv } from "./env";
+import { createRedisIdempotencyStore } from "./http/idempotency";
 import { createLogger } from "./logger";
 import { createMailTransport, startOutboxDispatcher } from "./mail";
 import { createRedisRateLimiter } from "./rate-limit";
@@ -32,13 +33,19 @@ if (!(await runtime.waitForRedis(STARTUP_REDIS_WAIT_MS))) {
   );
 }
 
-const auth = createAuth({
-  env,
-  pool: runtime.pool,
-  rateLimiter: createRedisRateLimiter(runtime.redis),
+const rateLimiter = createRedisRateLimiter(runtime.redis);
+const auth = createAuth({ env, pool: runtime.pool, rateLimiter, logger });
+const app = createApp({
   logger,
+  version: env.MINGXI_VERSION,
+  probes: runtime.probes,
+  auth: authPort(auth),
+  publicOrigin: new URL(env.MINGXI_PUBLIC_URL).origin,
+  trustedProxyHops: env.MINGXI_TRUSTED_PROXY_HOPS,
+  rateLimiter,
+  idempotencyStore: createRedisIdempotencyStore(runtime.redis),
+  withUserTransaction: (userId) => (work) => withUserTransaction(runtime.pool, userId, work),
 });
-const app = createApp({ logger, version: env.MINGXI_VERSION, probes: runtime.probes, auth });
 
 const stopDispatcher = env.MINGXI_PROCESS_ROLES.includes("worker")
   ? startOutboxDispatcher(runtime.pool, createMailTransport(env, logger), logger)

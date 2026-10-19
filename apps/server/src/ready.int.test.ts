@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { ReadinessResponse } from "@mingxi/contracts";
 import { createApp } from "./app";
 import { createRuntime, type Runtime } from "./runtime";
+import { fakeAuth, memoryIdempotencyStore, memoryRateLimiter, noDatabase } from "./test-doubles";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const REDIS_URL = process.env.TEST_REDIS_URL;
@@ -11,7 +12,20 @@ if (!DATABASE_URL || !REDIS_URL) {
 }
 
 const silent = pino({ level: "silent" });
-const noAuth = { handler: () => Promise.resolve(new Response(null, { status: 404 })) };
+
+function appFor(runtime: Runtime) {
+  return createApp({
+    logger: silent,
+    version: "it",
+    probes: runtime.probes,
+    auth: fakeAuth().port,
+    publicOrigin: "http://localhost:8787",
+    trustedProxyHops: 0,
+    rateLimiter: memoryRateLimiter(),
+    idempotencyStore: memoryIdempotencyStore(),
+    withUserTransaction: noDatabase,
+  });
+}
 const runtimes: Runtime[] = [];
 
 afterAll(async () => {
@@ -23,7 +37,7 @@ describe("就绪检查（真实依赖）", () => {
     const runtime = createRuntime({ DATABASE_URL, REDIS_URL }, silent);
     runtimes.push(runtime);
     expect(await runtime.waitForRedis(5_000)).toBe(true);
-    const app = createApp({ logger: silent, version: "it", probes: runtime.probes, auth: noAuth });
+    const app = appFor(runtime);
     const response = await app.request("/api/ready");
     const body = ReadinessResponse.parse(await response.json());
     expect(response.status, JSON.stringify(body)).toBe(200);
@@ -34,7 +48,7 @@ describe("就绪检查（真实依赖）", () => {
     const runtime = createRuntime({ DATABASE_URL, REDIS_URL: "redis://127.0.0.1:1" }, silent);
     runtimes.push(runtime);
     expect(await runtime.waitForRedis(300)).toBe(false);
-    const app = createApp({ logger: silent, version: "it", probes: runtime.probes, auth: noAuth });
+    const app = appFor(runtime);
     const response = await app.request("/api/ready");
     expect(response.status).toBe(503);
     const body = ReadinessResponse.parse(await response.json());

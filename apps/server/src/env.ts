@@ -7,6 +7,9 @@ import { z } from "zod";
 export const ProcessRole = z.enum(["api", "worker"]);
 export type ProcessRole = z.infer<typeof ProcessRole>;
 
+/** 空字符串视为未填写（`.env` 里常见 `KEY=` 这种占位写法）。 */
+const blankAsUndefined = (value: unknown) => (typeof value === "string" && !value.trim() ? undefined : value);
+
 const optionalSecret = z
   .string()
   .optional()
@@ -33,14 +36,19 @@ const ServerEnv = z
     REDIS_URL: z.url({ protocol: /^rediss?$/ }),
     /** 正式站对外地址：认证回调、邮件里的链接、可信来源（CSRF 校验）都以它为准。 */
     MINGXI_PUBLIC_URL: z.url({ protocol: /^https?$/ }),
+    /**
+     * 本服务前面有几层会追加 X-Forwarded-For 的可信反向代理（直连部署为 0）。
+     * 客户端地址只信任这几层代理追加的部分（http/client-ip.ts）；不设默认值，部署时必须按平台实际情况明确填写。
+     */
+    MINGXI_TRUSTED_PROXY_HOPS: z.preprocess(
+      blankAsUndefined,
+      z.coerce.number({ error: "必须填写：直连部署为 0，前面有一层反向代理为 1" }).int().min(0).max(5),
+    ),
     /** 会话 Cookie 签名与第三方令牌加密的密钥，至少 32 个字符（例如 `openssl rand -base64 32`）。 */
     BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET 至少 32 个字符"),
     /** smtp：真实投递；log：只把邮件内容写进日志，仅限本地开发，生产环境拒绝。 */
     MAIL_TRANSPORT: z.enum(["smtp", "log"]),
-    SMTP_URL: z.preprocess(
-      (value) => (typeof value === "string" && !value.trim() ? undefined : value),
-      z.url({ protocol: /^smtps?$/ }).optional(),
-    ),
+    SMTP_URL: z.preprocess(blankAsUndefined, z.url({ protocol: /^smtps?$/ }).optional()),
     /** 发件人，例如 `明晰 <no-reply@example.com>`。 */
     MAIL_FROM: z.string().min(3),
     GITHUB_CLIENT_ID: optionalSecret,

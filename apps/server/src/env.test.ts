@@ -5,6 +5,7 @@ const valid = {
   DATABASE_URL: "postgresql://app:secret@localhost:5432/mingxi",
   REDIS_URL: "redis://localhost:6379",
   MINGXI_PUBLIC_URL: "http://localhost:8787",
+  MINGXI_TRUSTED_PROXY_HOPS: "0",
   BETTER_AUTH_SECRET: "x".repeat(32),
   MAIL_TRANSPORT: "smtp",
   SMTP_URL: "smtp://localhost:2525",
@@ -63,6 +64,15 @@ describe("环境变量校验", () => {
     const env = loadEnv({ ...valid, GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "secret" });
     expect(env.GITHUB_CLIENT_ID).toBe("id");
     expect(loadEnv({ ...valid, GOOGLE_CLIENT_ID: "  " }).GOOGLE_CLIENT_ID).toBeUndefined();
+  });
+
+  it("可信代理层数必须明确填写，留空不当作 0", () => {
+    expect(loadEnv({ ...valid, MINGXI_TRUSTED_PROXY_HOPS: "1" }).MINGXI_TRUSTED_PROXY_HOPS).toBe(1);
+    for (const value of [undefined, "", "abc", "-1", "1.5"]) {
+      expect(() => loadEnv({ ...valid, MINGXI_TRUSTED_PROXY_HOPS: value })).toThrow(
+        /MINGXI_TRUSTED_PROXY_HOPS/,
+      );
+    }
   });
 
   it("拒绝越界端口", () => {

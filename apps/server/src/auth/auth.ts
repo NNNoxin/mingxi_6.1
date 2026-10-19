@@ -3,8 +3,11 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { z } from "zod";
 import { schema, type Pool } from "@mingxi/db";
 import type { ServerEnv } from "../env";
+import { CLIENT_IP_HEADER } from "../http/client-ip";
+import type { AuthPort } from "../http/types";
 import type { Logger } from "../logger";
 import { enqueueEmail } from "../mail/outbox";
 import type { RateLimiter } from "../rate-limit";
@@ -96,6 +99,9 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
       cookiePrefix: "mingxi",
       useSecureCookies: env.NODE_ENV === "production",
       defaultCookieAttributes: { httpOnly: true, sameSite: "lax" },
+      // 限流与会话记录用的客户端地址只读服务端算好的这个头（app.ts 按可信代理层数计算并覆盖客户端自带的值），
+      // 不读客户端可以伪造的 X-Forwarded-For。
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     user: {
       additionalFields: {
@@ -221,3 +227,38 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+/** 会话接口的返回：没有会话时为 null；只取业务需要的字段。 */
+const SessionPayload = z
+  .object({
+    session: z.object({ id: z.string() }),
+    user: z.object({
+      id: z.string(),
+      email: z.string(),
+      name: z.string(),
+      emailVerified: z.boolean(),
+      role: z.enum(schema.USER_ROLES),
+      status: z.enum(schema.USER_STATUSES),
+    }),
+  })
+  .nullable();
+
+/** 把认证模块包装成服务端使用的 AuthPort。 */
+export function authPort(auth: Auth): AuthPort {
+  return {
+    handler: (request) => auth.handler(request),
+    getSession: async (headers) => {
+      // 以响应形式取结果：会话在续期途中被删除时认证模块回 401 并附带清除 Cookie 的指令，
+      // 这属于“没有会话”，不是服务器错误；其余非 2xx 才按错误处理。
+      const response = await auth.api.getSession({ headers, asResponse: true });
+      const setCookie = response.headers.getSetCookie();
+      if (response.status === 401) return { session: null, setCookie };
+      if (!response.ok) throw new Error(`读取会话失败：认证模块返回 ${String(response.status)}`);
+      const payload = SessionPayload.parse(await response.json());
+      return {
+        session: payload ? { sessionId: payload.session.id, user: payload.user } : null,
+        setCookie,
+      };
+    },
+  };
+}

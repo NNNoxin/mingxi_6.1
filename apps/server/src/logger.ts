@@ -1,4 +1,4 @@
-import { pino, type Logger } from "pino";
+import { pino, type DestinationStream, type Logger } from "pino";
 import type { ServerEnv } from "./env";
 
 export type { Logger };
@@ -20,12 +20,20 @@ export const REDACT_PATHS = [
   "*.body",
 ];
 
-export function createLogger(env: Pick<ServerEnv, "LOG_LEVEL" | "NODE_ENV" | "MINGXI_VERSION">): Logger {
-  return pino({
+/** destination 默认是标准输出；测试传入内存流以检查实际写出的日志。 */
+export function createLogger(
+  env: Pick<ServerEnv, "LOG_LEVEL" | "NODE_ENV" | "MINGXI_VERSION">,
+  destination?: DestinationStream,
+): Logger {
+  const options = {
     level: env.LOG_LEVEL,
     base: { service: "mingxi-server", version: env.MINGXI_VERSION },
     redact: { paths: REDACT_PATHS, censor: "[已隐藏]" },
     timestamp: pino.stdTimeFunctions.isoTime,
+  };
+  if (destination) return pino(options, destination);
+  return pino({
+    ...options,
     ...(env.NODE_ENV === "development"
       ? { transport: { target: "pino-pretty", options: { colorize: true, translateTime: "SYS:HH:MM:ss" } } }
       : {}),
