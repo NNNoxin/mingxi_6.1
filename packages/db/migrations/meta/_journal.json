@@ -8,6 +8,27 @@
       "when": 1792332115940,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792380116955,
+      "tag": "0001_runtime_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792380574029,
+      "tag": "0002_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792380575070,
+      "tag": "0003_force_rls_and_grants",
+      "breakpoints": true
     }
   ]
 }

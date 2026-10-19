@@ -31,7 +31,9 @@ jobs:
           --health-cmd "valkey-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
+      # 表 owner（服务容器的超级用户）只用于迁移；测试准备阶段据此创建受行级隔离约束的运行时账号。
       TEST_DATABASE_URL: postgresql://mingxi:mingxi_ci_only@127.0.0.1:5432/mingxi_test
+      TEST_APP_DATABASE_URL: postgresql://mingxi_app:mingxi_app_ci_only@127.0.0.1:5432/mingxi_test
       TEST_REDIS_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v5
@@ -50,4 +52,4 @@ jobs:
       - name: 生产构建并执行迁移
         run: |
           pnpm --filter @mingxi/server build
-          DATABASE_URL="$TEST_DATABASE_URL" node apps/server/dist/migrate.js
+          DATABASE_URL_DIRECT="$TEST_DATABASE_URL" node apps/server/dist/migrate.js

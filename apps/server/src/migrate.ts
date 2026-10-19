@@ -3,9 +3,10 @@
 import { fileURLToPath } from "node:url";
 import { createPool, runMigrations } from "@mingxi/db";
 
-const connectionString = process.env.DATABASE_URL_DIRECT ?? process.env.DATABASE_URL;
+// 迁移用表 owner 的直连地址；DATABASE_URL 是受行级隔离约束的运行时账号，没有建表权限。
+const connectionString = process.env.DATABASE_URL_DIRECT;
 if (!connectionString) {
-  process.stderr.write("缺少 DATABASE_URL_DIRECT（或 DATABASE_URL），无法执行迁移\n");
+  process.stderr.write("缺少 DATABASE_URL_DIRECT（表 owner 的直连地址），无法执行迁移\n");
   process.exit(1);
 }
 
