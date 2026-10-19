@@ -12,8 +12,16 @@ export function testUser(overrides: Partial<SessionUser> = {}): SessionUser {
     emailVerified: true,
     role: "user",
     status: "active",
+    twoFactorEnabled: false,
     ...overrides,
   };
+}
+
+export function testSession(
+  user: SessionUser,
+  overrides: Partial<Omit<SessionLookup, "user">> = {},
+): SessionLookup {
+  return { sessionId: `s-${user.id}`, createdAt: new Date(), mfaVerified: false, user, ...overrides };
 }
 
 /** 按 Cookie 里的 `session=<名字>` 查会话；同时记录 /api/auth/* 收到的请求。 */

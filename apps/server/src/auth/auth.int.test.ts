@@ -14,6 +14,7 @@ import type { ProtectedEnv } from "../http/session";
 import { dispatchDueEmails } from "../mail/outbox";
 import { createSmtpTransport, type MailTransport } from "../mail/transport";
 import { createRedisRateLimiter } from "../rate-limit";
+import { totpFromUri } from "../test-totp";
 import { authPort, createAuth } from "./auth";
 
 // 认证全流程（docs/02 §4.1、EC-U1）与业务接口鉴权（docs/02 §2.3、§4.4），
@@ -533,6 +534,113 @@ describe("业务接口（真实会话）", () => {
     for (let i = 0; i < 31; i += 1) statuses.push((await device.api("/me")).status);
     expect(statuses.filter((status) => status === 200)).toHaveLength(30);
     expect(statuses.at(-1)).toBe(429);
+  });
+});
+
+describe("两步验证", () => {
+  async function mfaFlag(device: Device): Promise<boolean | undefined> {
+    const { rows } = await db.appPool.query<{ mfa_verified: boolean }>(
+      "SELECT mfa_verified FROM auth.sessions WHERE token = $1",
+      [sessionTokenOf(device)],
+    );
+    return rows[0]?.mfa_verified;
+  }
+
+  async function enableTwoFactor() {
+    const { email, device } = await registerAndVerify();
+    // 验证邮箱后自动登录的会话没有经过两步验证。
+    expect(await mfaFlag(device)).toBe(false);
+    const enabled = await device.call("/two-factor/enable", { body: { password: PASSWORD } });
+    expect(enabled.status, JSON.stringify(enabled.json)).toBe(200);
+    const { totpURI, backupCodes } = enabled.json as { totpURI: string; backupCodes: string[] };
+    expect(totpURI).toMatch(/^otpauth:\/\/totp\//);
+    expect(backupCodes.length).toBeGreaterThanOrEqual(8);
+    const confirmed = await device.call("/two-factor/verify-totp", { body: { code: totpFromUri(totpURI) } });
+    expect(confirmed.status, JSON.stringify(confirmed.json)).toBe(200);
+    return { email, device, totpURI, backupCodes };
+  }
+
+  it("开启：用验证码确认后生效，换发的会话标记为经过两步验证，密钥与备用码加密存储，并写审计", async () => {
+    const { email, device, totpURI, backupCodes } = await enableTwoFactor();
+    expect(await mfaFlag(device)).toBe(true);
+    const { rows } = await db.ownerPool.query<{
+      two_factor_enabled: boolean;
+      secret: string;
+      backup_codes: string;
+      id: string;
+    }>(
+      `SELECT u.id, u.two_factor_enabled, t.secret, t.backup_codes
+         FROM auth.users u JOIN auth.two_factors t ON t.user_id = u.id WHERE u.email = $1`,
+      [email],
+    );
+    const row = rows[0];
+    expect(row?.two_factor_enabled).toBe(true);
+    const plainSecret = new URL(totpURI).searchParams.get("secret") ?? "";
+    expect(row?.secret).not.toContain(plainSecret);
+    for (const code of backupCodes) expect(row?.backup_codes).not.toContain(code);
+    const audit = await db.ownerPool.query(
+      "SELECT 1 FROM ops.audit_log WHERE actor_user_id = $1 AND action = 'auth.two_factor_enabled'",
+      [row?.id],
+    );
+    expect(audit.rowCount).toBe(1);
+  });
+
+  it("开启后在新设备登录：密码正确也不给会话，验证 TOTP 后才建立会话", async () => {
+    const { email, totpURI } = await enableTwoFactor();
+    const laptop = new Device();
+    const signIn = await laptop.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    expect(signIn.status).toBe(200);
+    expect(signIn.json).toMatchObject({ twoFactorRedirect: true });
+    expect(laptop.cookies.has("mingxi.session_token")).toBe(false);
+    expect((await laptop.api("/me")).status).toBe(401);
+
+    const wrong = await laptop.call("/two-factor/verify-totp", { body: { code: "000000" } });
+    expect(wrong.status).toBe(401);
+    const verified = await laptop.call("/two-factor/verify-totp", { body: { code: totpFromUri(totpURI) } });
+    expect(verified.status, JSON.stringify(verified.json)).toBe(200);
+    expect((await laptop.api("/me")).status).toBe(200);
+    expect(await mfaFlag(laptop)).toBe(true);
+  });
+
+  it("备用码可以代替 TOTP，但每个只能用一次", async () => {
+    const { email, backupCodes } = await enableTwoFactor();
+    const code = backupCodes[0] ?? "";
+    const first = new Device();
+    await first.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    expect((await first.call("/two-factor/verify-backup-code", { body: { code } })).status).toBe(200);
+    expect(await mfaFlag(first)).toBe(true);
+
+    const second = new Device();
+    await second.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    expect((await second.call("/two-factor/verify-backup-code", { body: { code } })).status).toBe(401);
+    expect(second.cookies.has("mingxi.session_token")).toBe(false);
+  });
+
+  it("“信任此设备”之后再登录不用验证码，但这样的会话不算经过两步验证（后台不接受）", async () => {
+    const { email, totpURI } = await enableTwoFactor();
+    const phone = new Device();
+    await phone.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    const trusted = await phone.call("/two-factor/verify-totp", {
+      body: { code: totpFromUri(totpURI), trustDevice: true },
+    });
+    expect(trusted.status).toBe(200);
+    expect((await phone.call("/sign-out", { body: {} })).status).toBe(200);
+
+    const again = await phone.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    expect(again.status).toBe(200);
+    expect(again.json).not.toMatchObject({ twoFactorRedirect: true });
+    expect((await phone.api("/me")).status).toBe(200);
+    expect(await mfaFlag(phone)).toBe(false);
+  });
+
+  it("客户端无法自己声明会话经过两步验证", async () => {
+    const { email } = await registerAndVerify();
+    const device = new Device();
+    const signIn = await device.call("/sign-in/email", {
+      body: { email, password: PASSWORD, mfaVerified: true },
+    });
+    expect(signIn.status).toBe(200);
+    expect(await mfaFlag(device)).toBe(false);
   });
 });
 

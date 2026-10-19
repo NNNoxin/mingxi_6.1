@@ -7,7 +7,14 @@ import { createApp, type AppOptions } from "./app";
 import { MAX_REPLAY_BODY_BYTES } from "./http/idempotency";
 import { AppError } from "./errors";
 import { createLogger } from "./logger";
-import { fakeAuth, memoryIdempotencyStore, memoryRateLimiter, noDatabase, testUser } from "./test-doubles";
+import {
+  fakeAuth,
+  memoryIdempotencyStore,
+  memoryRateLimiter,
+  noDatabase,
+  testSession,
+  testUser,
+} from "./test-doubles";
 
 const silent = pino({ level: "silent" });
 const ORIGIN = "https://mingxi.example.com";
@@ -42,12 +49,9 @@ function probes(results: { postgres: boolean; redis: boolean }): AppOptions["pro
   ];
 }
 
-const reader = { sessionId: "s-reader", user: testUser() };
-const other = { sessionId: "s-other", user: testUser({ id: "0192f0c4-5b8a-7c3d-9e1f-000000000002" }) };
-const frozen = {
-  sessionId: "s-frozen",
-  user: testUser({ id: "0192f0c4-5b8a-7c3d-9e1f-000000000003", status: "frozen" }),
-};
+const reader = testSession(testUser());
+const other = testSession(testUser({ id: "0192f0c4-5b8a-7c3d-9e1f-000000000002" }));
+const frozen = testSession(testUser({ id: "0192f0c4-5b8a-7c3d-9e1f-000000000003", status: "frozen" }));
 
 function signedIn(name: "reader" | "other" | "frozen", init: RequestInit = {}): RequestInit {
   return { ...init, headers: { cookie: `session=${name}`, ...(init.headers as Record<string, string>) } };

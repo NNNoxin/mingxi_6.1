@@ -9,10 +9,16 @@ export interface SessionUser {
   role: (typeof schema.USER_ROLES)[number];
   /** frozen：已申请删除账号，所有业务接口拒绝访问（EC-U4）。 */
   status: (typeof schema.USER_STATUSES)[number];
+  /** 是否已开启两步验证；工作人员必须开启。 */
+  twoFactorEnabled: boolean;
 }
 
 export interface SessionLookup {
   sessionId: string;
+  /** 会话建立的时间（续期不改变它）：后台按它限制工作人员会话时长与敏感操作的“最近登录”。 */
+  createdAt: Date;
+  /** 会话是否经过两步验证建立。 */
+  mfaVerified: boolean;
   user: SessionUser;
 }
 

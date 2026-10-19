@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { twoFactor } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 import { schema, type Pool } from "@mingxi/db";
@@ -51,6 +52,12 @@ async function audit(
   );
 }
 
+/**
+ * 通过两步验证后建立会话的接口。登录时开启了两步验证的账号先拿到临时凭据，在这些接口验证 TOTP 或备用码后才创建会话；
+ * 开启两步验证时用 TOTP 确认，也在这里换发新会话。“信任此设备”跳过验证的登录发生在 /sign-in/email，不在其中。
+ */
+const MFA_SESSION_PATHS = new Set(["/two-factor/verify-totp", "/two-factor/verify-backup-code"]);
+
 /** 需要检查密码强度的接口与对应的请求字段。 */
 const PASSWORD_FIELDS: Record<string, string> = {
   "/sign-up/email": "password",
@@ -90,6 +97,7 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
           session: schema.sessions,
           account: schema.accounts,
           verification: schema.verifications,
+          twoFactor: schema.twoFactors,
         },
       }),
     ),
@@ -157,6 +165,9 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
       },
     },
     session: {
+      additionalFields: {
+        mfaVerified: { type: "boolean", required: false, input: false, defaultValue: false },
+      },
       expiresIn: SESSION_DAYS * 24 * 60 * 60,
       updateAge: 24 * 60 * 60,
       // 改密码、删除账号、导出数据等敏感操作要求最近 10 分钟内登录过。
@@ -175,6 +186,11 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
         "/request-password-reset": { window: 5 * 60, max: 3 },
         "/reset-password": { window: 5 * 60, max: 5 },
         "/change-password": { window: 5 * 60, max: 5 },
+        // 两步验证：插件自带“10 秒 3 次”与连续失败锁定；验证码按 IP 再收紧到与登录相同。
+        "/two-factor/verify-totp": { window: 60, max: 5 },
+        "/two-factor/verify-backup-code": { window: 60, max: 5 },
+        "/two-factor/enable": { window: 5 * 60, max: 5 },
+        "/two-factor/disable": { window: 5 * 60, max: 5 },
       },
       customStorage: { consume: (key, rule) => rateLimiter.consume(`auth:${key}`, rule) },
     },
@@ -193,6 +209,10 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
         return Promise.reject(new APIError("BAD_REQUEST", { message: problem, code: "WEAK_PASSWORD" }));
       }),
     },
+    plugins: [
+      // TOTP 与一次性备用码；密钥与备用码由认证模块用 BETTER_AUTH_SECRET 加密后存入 auth.two_factors。
+      twoFactor({ issuer: "明晰" }),
+    ],
     databaseHooks: {
       user: {
         create: {
@@ -200,9 +220,27 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
             await audit(pool, { actorUserId: user.id, action: "auth.sign_up" });
           },
         },
+        update: {
+          after: async (user, context) => {
+            // 开启：用 TOTP 确认的那次请求；关闭：/two-factor/disable。
+            const enabled = context?.path === "/two-factor/verify-totp" && user.twoFactorEnabled === true;
+            const disabled = context?.path === "/two-factor/disable" && user.twoFactorEnabled === false;
+            if (enabled || disabled) {
+              await audit(pool, {
+                actorUserId: user.id,
+                action: enabled ? "auth.two_factor_enabled" : "auth.two_factor_disabled",
+              });
+            }
+          },
+        },
       },
       session: {
         create: {
+          // 会话是否经过两步验证建立，只由服务端按来源接口判断（客户端无法传入，见 additionalFields 的 input: false）。
+          before: (session, context) =>
+            Promise.resolve({
+              data: { ...session, mfaVerified: MFA_SESSION_PATHS.has(context?.path ?? "") },
+            }),
           after: async (session) => {
             await audit(pool, {
               actorUserId: session.userId,
@@ -231,7 +269,7 @@ export type Auth = ReturnType<typeof createAuth>;
 /** 会话接口的返回：没有会话时为 null；只取业务需要的字段。 */
 const SessionPayload = z
   .object({
-    session: z.object({ id: z.string() }),
+    session: z.object({ id: z.string(), createdAt: z.coerce.date(), mfaVerified: z.boolean() }),
     user: z.object({
       id: z.string(),
       email: z.string(),
@@ -239,6 +277,7 @@ const SessionPayload = z
       emailVerified: z.boolean(),
       role: z.enum(schema.USER_ROLES),
       status: z.enum(schema.USER_STATUSES),
+      twoFactorEnabled: z.boolean(),
     }),
   })
   .nullable();
@@ -256,7 +295,14 @@ export function authPort(auth: Auth): AuthPort {
       if (!response.ok) throw new Error(`读取会话失败：认证模块返回 ${String(response.status)}`);
       const payload = SessionPayload.parse(await response.json());
       return {
-        session: payload ? { sessionId: payload.session.id, user: payload.user } : null,
+        session: payload
+          ? {
+              sessionId: payload.session.id,
+              createdAt: payload.session.createdAt,
+              mfaVerified: payload.session.mfaVerified,
+              user: payload.user,
+            }
+          : null,
         setCookie,
       };
     },

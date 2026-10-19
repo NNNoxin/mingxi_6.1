@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "staff:grant": "tsx --env-file-if-exists=../../.env src/cli/staff.ts grant"
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",
