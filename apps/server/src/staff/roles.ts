@@ -29,7 +29,16 @@ export interface RoleChange {
  */
 export async function changeRole(
   client: PoolClient,
-  input: { email: string; role: UserRole; actorUserId: string | null; via: "cli" | "admin"; reason: string },
+  input: {
+    email: string;
+    role: UserRole;
+    actorUserId: string | null;
+    via: "cli" | "admin";
+    reason: string;
+    /** 后台发起时记下请求 ID 与客户端地址哈希；命令行为 null。 */
+    requestId: string | null;
+    ipHash: string | null;
+  },
 ): Promise<RoleChange> {
   const found = await client.query<{ id: string; role: UserRole; email_verified: boolean }>(
     "SELECT id, role, email_verified FROM auth.users WHERE email = $1 FOR UPDATE",
@@ -51,12 +60,19 @@ export async function changeRole(
   }
   await client.query("UPDATE auth.users SET role = $2 WHERE id = $1", [user.id, input.role]);
   await client.query(
-    `INSERT INTO ops.audit_log (actor_user_id, action, target_type, target_id, metadata)
-     VALUES ($1, 'staff.role_changed', 'user', $2, $3)`,
+    `INSERT INTO ops.audit_log (actor_user_id, action, target_type, target_id, metadata, ip_hash)
+     VALUES ($1, 'staff.role_changed', 'user', $2, $3, $4)`,
     [
       input.actorUserId,
       user.id,
-      JSON.stringify({ from: user.role, to: input.role, via: input.via, reason: input.reason }),
+      JSON.stringify({
+        from: user.role,
+        to: input.role,
+        via: input.via,
+        reason: input.reason,
+        ...(input.requestId ? { requestId: input.requestId } : {}),
+      }),
+      input.ipHash,
     ],
   );
   return { userId: user.id, from: user.role, to: input.role };

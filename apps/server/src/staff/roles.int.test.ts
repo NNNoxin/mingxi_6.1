@@ -45,7 +45,15 @@ async function inTransaction<T>(work: (client: PoolClient) => Promise<T>): Promi
 
 const grant = (email: string, role: UserRole) =>
   inTransaction((client) =>
-    changeRole(client, { email, role, actorUserId: null, via: "cli", reason: "测试" }),
+    changeRole(client, {
+      email,
+      role,
+      actorUserId: null,
+      via: "cli",
+      reason: "测试",
+      requestId: null,
+      ipHash: null,
+    }),
   );
 
 describe("工作人员角色", () => {

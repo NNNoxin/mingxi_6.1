@@ -1,7 +1,8 @@
 import { serve } from "@hono/node-server";
-import { assertRuntimeRoleIsolated, withUserTransaction } from "@mingxi/db";
+import { assertAdminRoleIsolated, assertRuntimeRoleIsolated, withUserTransaction } from "@mingxi/db";
+import { adminActions } from "./admin/actions";
 import { createApp } from "./app";
-import { authPort, createAuth } from "./auth/auth";
+import { adminAuthActions, authPort, createAuth } from "./auth/auth";
 import { loadEnv } from "./env";
 import { createRedisIdempotencyStore } from "./http/idempotency";
 import { createLogger } from "./logger";
@@ -20,8 +21,15 @@ const runtime = createRuntime(env, logger);
 try {
   const role = await assertRuntimeRoleIsolated(runtime.pool);
   logger.info({ role: role.role }, "数据库运行时账号受行级隔离约束");
+  if (runtime.adminPool) {
+    const admin = await assertAdminRoleIsolated(runtime.adminPool);
+    logger.info({ role: admin.role }, "运营后台数据库账号只有只读权限");
+  }
 } catch (error) {
-  logger.fatal({ err: error }, "数据库运行时账号检查未通过，拒绝启动");
+  logger.fatal(
+    { err: error },
+    "数据库账号检查未通过（运行时账号须受行级隔离约束、后台账号须只读），拒绝启动",
+  );
   await runtime.close();
   process.exit(1);
 }
@@ -35,17 +43,31 @@ if (!(await runtime.waitForRedis(STARTUP_REDIS_WAIT_MS))) {
 
 const rateLimiter = createRedisRateLimiter(runtime.redis);
 const auth = createAuth({ env, pool: runtime.pool, rateLimiter, logger });
+const port = authPort(auth);
 const app = createApp({
   logger,
   version: env.MINGXI_VERSION,
   probes: runtime.probes,
-  auth: authPort(auth),
+  auth: port,
   publicOrigin: new URL(env.MINGXI_PUBLIC_URL).origin,
   trustedProxyHops: env.MINGXI_TRUSTED_PROXY_HOPS,
   rateLimiter,
   idempotencyStore: createRedisIdempotencyStore(runtime.redis),
   withUserTransaction: (userId) => (work) => withUserTransaction(runtime.pool, userId, work),
   ...(env.MINGXI_PROCESS_ROLES.includes("web") ? { webRoot: env.MINGXI_WEB_ROOT } : {}),
+  ...(env.MINGXI_ADMIN_URL && runtime.adminPool
+    ? {
+        admin: {
+          origin: new URL(env.MINGXI_ADMIN_URL).origin,
+          auth: port,
+          readPool: runtime.adminPool,
+          actions: adminActions(runtime.pool, adminAuthActions(auth)),
+          rateLimiter,
+          trustedProxyHops: env.MINGXI_TRUSTED_PROXY_HOPS,
+          ipHashSecret: env.BETTER_AUTH_SECRET,
+        },
+      }
+    : {}),
 });
 
 const stopDispatcher = env.MINGXI_PROCESS_ROLES.includes("worker")

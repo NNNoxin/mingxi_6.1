@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -7,7 +6,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { z } from "zod";
 import { schema, type Pool } from "@mingxi/db";
 import type { ServerEnv } from "../env";
-import { CLIENT_IP_HEADER } from "../http/client-ip";
+import { CLIENT_IP_HEADER, hashClientIp } from "../http/client-ip";
+import type { AdminAuthActions } from "../admin/actions";
 import type { AuthPort } from "../http/types";
 import type { Logger } from "../logger";
 import { enqueueEmail } from "../mail/outbox";
@@ -19,6 +19,7 @@ export type AuthEnv = Pick<
   ServerEnv,
   | "NODE_ENV"
   | "MINGXI_PUBLIC_URL"
+  | "MINGXI_ADMIN_URL"
   | "BETTER_AUTH_SECRET"
   | "GITHUB_CLIENT_ID"
   | "GITHUB_CLIENT_SECRET"
@@ -35,12 +36,6 @@ export interface AuthDependencies {
 }
 
 const SESSION_DAYS = 7;
-
-/** 审计日志里的 IP 只存加盐哈希（docs/02 §4.3 L2）。 */
-function hashIp(secret: string, ip: string | null | undefined): string | null {
-  if (!ip) return null;
-  return createHash("sha256").update(`${secret}:${ip}`).digest("hex").slice(0, 32);
-}
 
 async function audit(
   pool: Pool,
@@ -85,7 +80,8 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
     baseURL: origin,
     basePath: "/api/auth",
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [origin],
+    // 正式站与运营后台（不同源）都通过 /api/auth/* 登录；邮件里的链接始终指向正式站（baseURL）。
+    trustedOrigins: env.MINGXI_ADMIN_URL ? [origin, new URL(env.MINGXI_ADMIN_URL).origin] : [origin],
     telemetry: { enabled: false },
     database: withDuplicateEmailHandling(
       drizzleAdapter(drizzle(pool), {
@@ -245,7 +241,7 @@ export function createAuth({ env, pool, rateLimiter, logger }: AuthDependencies)
             await audit(pool, {
               actorUserId: session.userId,
               action: "auth.sign_in",
-              ipHash: hashIp(env.BETTER_AUTH_SECRET, session.ipAddress),
+              ipHash: hashClientIp(env.BETTER_AUTH_SECRET, session.ipAddress),
             });
           },
         },
@@ -305,6 +301,22 @@ export function authPort(auth: Auth): AuthPort {
           : null,
         setCookie,
       };
+    },
+  };
+}
+
+/** 正式站上验证邮件、重置密码落地页的路径（与 apps/web/src/auth/paths.ts 一致）。 */
+const VERIFY_EMAIL_PATH = "/verify-email";
+const RESET_PASSWORD_PATH = "/reset-password";
+
+/** 后台代用户触发的邮件：与用户自己在正式站上操作走同一套认证接口与发件箱。 */
+export function adminAuthActions(auth: Auth): AdminAuthActions {
+  return {
+    resendVerification: async (email) => {
+      await auth.api.sendVerificationEmail({ body: { email, callbackURL: VERIFY_EMAIL_PATH } });
+    },
+    sendPasswordReset: async (email) => {
+      await auth.api.requestPasswordReset({ body: { email, redirectTo: RESET_PASSWORD_PATH } });
     },
   };
 }

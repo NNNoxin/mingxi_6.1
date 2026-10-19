@@ -51,6 +51,10 @@ const ServerEnv = z
     SMTP_URL: z.preprocess(blankAsUndefined, z.url({ protocol: /^smtps?$/ }).optional()),
     /** 发件人，例如 `明晰 <no-reply@example.com>`。 */
     MAIL_FROM: z.string().min(3),
+    /** 运营后台的对外地址（与正式站不同源，docs/05 §6.1）。设置后启用后台接口 /api/admin/*。 */
+    MINGXI_ADMIN_URL: z.preprocess(blankAsUndefined, z.url({ protocol: /^https?$/ }).optional()),
+    /** 运营后台只读数据库账号（mingxi_admin 成员，由 db:roles 创建）。与 MINGXI_ADMIN_URL 同时设置。 */
+    ADMIN_DATABASE_URL: z.preprocess(blankAsUndefined, z.url({ protocol: /^postgres(ql)?$/ }).optional()),
     /** web 角色托管的正式站静态产物目录（apps/web 的 next build 输出 out/）。 */
     MINGXI_WEB_ROOT: z.preprocess(blankAsUndefined, z.string().optional()),
     GITHUB_CLIENT_ID: optionalSecret,
@@ -71,6 +75,23 @@ const ServerEnv = z
         code: "custom",
         path: ["MINGXI_WEB_ROOT"],
         message: "启用 web 角色时必须提供正式站静态产物目录",
+      });
+    }
+    if (Boolean(env.MINGXI_ADMIN_URL) !== Boolean(env.ADMIN_DATABASE_URL)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["MINGXI_ADMIN_URL"],
+        message: "MINGXI_ADMIN_URL 与 ADMIN_DATABASE_URL 必须同时设置（启用运营后台）或同时留空",
+      });
+    }
+    if (
+      env.MINGXI_ADMIN_URL &&
+      new URL(env.MINGXI_ADMIN_URL).origin === new URL(env.MINGXI_PUBLIC_URL).origin
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["MINGXI_ADMIN_URL"],
+        message: "运营后台必须与正式站不同源（不同域名或子域名），Cookie 才能隔离",
       });
     }
     if (env.MAIL_TRANSPORT === "log" && env.NODE_ENV === "production") {

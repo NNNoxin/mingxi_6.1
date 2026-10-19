@@ -82,6 +82,17 @@ describe("环境变量校验", () => {
     }
   });
 
+  it("运营后台：地址与只读数据库账号成对出现，且与正式站不同源", () => {
+    const adminDb = "postgresql://admin_app:secret@localhost:5432/mingxi";
+    expect(() => loadEnv({ ...valid, MINGXI_ADMIN_URL: "http://admin.localhost:4402" })).toThrow(/同时设置/);
+    expect(() => loadEnv({ ...valid, ADMIN_DATABASE_URL: adminDb })).toThrow(/同时设置/);
+    expect(() =>
+      loadEnv({ ...valid, MINGXI_ADMIN_URL: "http://localhost:8787/admin", ADMIN_DATABASE_URL: adminDb }),
+    ).toThrow(/不同源/);
+    const env = loadEnv({ ...valid, MINGXI_ADMIN_URL: "http://localhost:4402", ADMIN_DATABASE_URL: adminDb });
+    expect(env.MINGXI_ADMIN_URL).toBe("http://localhost:4402");
+  });
+
   it("拒绝越界端口", () => {
     expect(() => loadEnv({ ...valid, PORT: "70000" })).toThrow(EnvError);
   });

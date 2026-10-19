@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 
 /**
@@ -25,6 +26,12 @@ export function resolveClientIp(
   if (!candidate) return null;
   const mapped = candidate.startsWith("::ffff:") ? candidate.slice(7) : candidate;
   return isIP(mapped) ? mapped : null;
+}
+
+/** 审计日志里的客户端地址只存加盐哈希（docs/02 §4.3 L2）。 */
+export function hashClientIp(secret: string, ip: string | null | undefined): string | null {
+  if (!ip) return null;
+  return createHash("sha256").update(`${secret}:${ip}`).digest("hex").slice(0, 32);
 }
 
 /** 复制一份请求，把计算出的客户端地址写进专用请求头（覆盖客户端自带的值）。 */

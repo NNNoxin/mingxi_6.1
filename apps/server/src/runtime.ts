@@ -6,6 +6,8 @@ import type { DependencyProbe } from "./routes/health";
 
 export interface Runtime {
   pool: Pool;
+  /** 运营后台只读账号的连接池；未启用运营后台时为 null。 */
+  adminPool: Pool | null;
   redis: Redis;
   probes: DependencyProbe[];
   /**
@@ -17,10 +19,19 @@ export interface Runtime {
 }
 
 /** 创建进程级共享资源（数据库连接池、Redis 连接）以及对应的就绪探针。 */
-export function createRuntime(env: Pick<ServerEnv, "DATABASE_URL" | "REDIS_URL">, logger: Logger): Runtime {
+export function createRuntime(
+  env: Pick<ServerEnv, "DATABASE_URL" | "REDIS_URL"> & Partial<Pick<ServerEnv, "ADMIN_DATABASE_URL">>,
+  logger: Logger,
+): Runtime {
   const pool = createPool({ connectionString: env.DATABASE_URL, applicationName: "mingxi-server" });
   pool.on("error", (error) => {
     logger.error({ err: error }, "数据库连接池中的空闲连接出错");
+  });
+  const adminPool = env.ADMIN_DATABASE_URL
+    ? createPool({ connectionString: env.ADMIN_DATABASE_URL, max: 3, applicationName: "mingxi-server-admin" })
+    : null;
+  adminPool?.on("error", (error) => {
+    logger.error({ err: error }, "后台只读连接池中的空闲连接出错");
   });
 
   // 不排队离线命令：Redis 不可用时命令立即失败，由调用方与就绪检查如实反映，而不是无限等待。
@@ -63,12 +74,13 @@ export function createRuntime(env: Pick<ServerEnv, "DATABASE_URL" | "REDIS_URL">
 
   return {
     pool,
+    adminPool,
     redis,
     probes,
     waitForRedis,
     close: async () => {
       redis.disconnect();
-      await pool.end();
+      await Promise.all([pool.end(), adminPool?.end()]);
     },
   };
 }

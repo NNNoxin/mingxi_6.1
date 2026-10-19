@@ -4,6 +4,7 @@ import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { HTTP_STATUS_BY_CODE } from "@mingxi/contracts";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { adminRoutes, type AdminDeps } from "./admin/routes";
 import { AppError, errorBody } from "./errors";
 import { resolveClientIp, socketAddressOf, withClientIpHeader } from "./http/client-ip";
 import { idempotency, type IdempotencyStore } from "./http/idempotency";
@@ -45,6 +46,8 @@ export interface AppOptions {
   maxBodyBytes?: number;
   /** web 角色：正式站静态产物目录（MINGXI_WEB_ROOT）。不提供时本进程只提供 /api。 */
   webRoot?: string;
+  /** 运营后台接口（docs/05）。不提供时 /api/admin/* 与其他未知接口一样按普通业务接口处理。 */
+  admin?: AdminDeps;
 }
 
 const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
@@ -103,6 +106,9 @@ export function createApp(options: AppOptions) {
     if (!clientIp) throw new Error("无法确定客户端地址，拒绝处理认证请求（限流依赖它）");
     return options.auth.handler(withClientIpHeader(c.req.raw, clientIp));
   });
+
+  // —— 运营后台接口：独立的一组中间件（后台来源、工作人员、两步验证），必须注册在普通业务接口之前。——
+  if (options.admin) app.route("/api/admin", adminRoutes(options.admin));
 
   // —— 业务接口：其余 /api/* 一律要求登录。默认拒绝：以后在这里或之后注册的路由都经过这组中间件。——
   const api = new Hono<ProtectedEnv>();

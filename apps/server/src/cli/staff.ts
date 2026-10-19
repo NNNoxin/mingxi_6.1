@@ -30,6 +30,8 @@ try {
     actorUserId: null,
     via: "cli",
     reason: reason.trim(),
+    requestId: null,
+    ipHash: null,
   });
   await client.query("COMMIT");
   process.stdout.write(
