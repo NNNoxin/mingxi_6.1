@@ -29,6 +29,13 @@
       "when": 1792380575070,
       "tag": "0003_force_rls_and_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792381299078,
+      "tag": "0004_existing_account_email",
+      "breakpoints": true
     }
   ]
 }

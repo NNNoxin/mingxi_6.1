@@ -7,6 +7,18 @@ import { AppError } from "./errors";
 
 const silent = pino({ level: "silent" });
 
+/** 记录收到的请求路径；认证模块本身的行为在 auth.int.test.ts 里连真实依赖测试。 */
+function recordingAuth() {
+  const seen: string[] = [];
+  return {
+    seen,
+    handler: (request: Request) => {
+      seen.push(`${request.method} ${new URL(request.url).pathname}`);
+      return Promise.resolve(Response.json({ ok: true }));
+    },
+  };
+}
+
 function appWith(probeResults: { postgres: boolean; redis: boolean }) {
   return createApp({
     logger: silent,
@@ -23,6 +35,7 @@ function appWith(probeResults: { postgres: boolean; redis: boolean }) {
       },
     ],
     maxBodyBytes: 64,
+    auth: recordingAuth(),
   });
 }
 
@@ -56,6 +69,7 @@ describe("健康检查", () => {
       logger: silent,
       version: "test",
       probes: [{ name: "postgres", probe: () => new Promise(() => undefined) }],
+      auth: recordingAuth(),
     });
     const response = await app.request("/api/ready");
     expect(response.status).toBe(503);
@@ -116,5 +130,15 @@ describe("统一错误格式", () => {
     const response = await appWith({ postgres: true, redis: true }).request("/api/health");
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(response.headers.get("X-Frame-Options")).toBe("SAMEORIGIN");
+  });
+});
+
+describe("认证路由", () => {
+  it("/api/auth/* 的 GET 与 POST 交给认证模块处理", async () => {
+    const auth = recordingAuth();
+    const app = createApp({ logger: silent, version: "test", probes: [], auth });
+    expect((await app.request("/api/auth/get-session")).status).toBe(200);
+    expect((await app.request("/api/auth/sign-in/email", { method: "POST", body: "{}" })).status).toBe(200);
+    expect(auth.seen).toEqual(["GET /api/auth/get-session", "POST /api/auth/sign-in/email"]);
   });
 });

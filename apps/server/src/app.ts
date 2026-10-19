@@ -15,10 +15,16 @@ export interface AppEnv {
   };
 }
 
+/** 认证模块对外只需要一个处理 /api/auth/* 请求的函数（Better Auth 实例满足这个形状）。 */
+export interface AuthHandler {
+  handler: (request: Request) => Promise<Response>;
+}
+
 export interface AppOptions {
   logger: Logger;
   version: string;
   probes: DependencyProbe[];
+  auth: AuthHandler;
   /** 单个请求体上限（字节）。文件上传走对象存储预签名直传，不经过这里。 */
   maxBodyBytes?: number;
 }
@@ -60,6 +66,8 @@ export function createApp(options: AppOptions) {
   );
 
   app.route("/api", healthRoutes({ version: options.version, probes: options.probes }));
+  // 注册、登录、验证邮箱、找回密码、会话管理（docs/02 §4.1）。
+  app.on(["GET", "POST"], "/api/auth/*", (c) => options.auth.handler(c.req.raw));
 
   app.notFound((c) => c.json(errorBody("not_found", "接口不存在", c.var.requestId), status("not_found")));
 

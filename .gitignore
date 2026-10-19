@@ -17,6 +17,9 @@ apps/demo/public/demo-fixtures/
 *.pem
 *.key
 
+# 本地 Redis 在当前目录生成的快照
+dump.rdb
+
 # 测试与调试输出
 playwright-report/
 test-results/

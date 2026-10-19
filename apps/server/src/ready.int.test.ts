@@ -11,6 +11,7 @@ if (!DATABASE_URL || !REDIS_URL) {
 }
 
 const silent = pino({ level: "silent" });
+const noAuth = { handler: () => Promise.resolve(new Response(null, { status: 404 })) };
 const runtimes: Runtime[] = [];
 
 afterAll(async () => {
@@ -22,7 +23,7 @@ describe("就绪检查（真实依赖）", () => {
     const runtime = createRuntime({ DATABASE_URL, REDIS_URL }, silent);
     runtimes.push(runtime);
     expect(await runtime.waitForRedis(5_000)).toBe(true);
-    const app = createApp({ logger: silent, version: "it", probes: runtime.probes });
+    const app = createApp({ logger: silent, version: "it", probes: runtime.probes, auth: noAuth });
     const response = await app.request("/api/ready");
     const body = ReadinessResponse.parse(await response.json());
     expect(response.status, JSON.stringify(body)).toBe(200);
@@ -33,7 +34,7 @@ describe("就绪检查（真实依赖）", () => {
     const runtime = createRuntime({ DATABASE_URL, REDIS_URL: "redis://127.0.0.1:1" }, silent);
     runtimes.push(runtime);
     expect(await runtime.waitForRedis(300)).toBe(false);
-    const app = createApp({ logger: silent, version: "it", probes: runtime.probes });
+    const app = createApp({ logger: silent, version: "it", probes: runtime.probes, auth: noAuth });
     const response = await app.request("/api/ready");
     expect(response.status).toBe(503);
     const body = ReadinessResponse.parse(await response.json());

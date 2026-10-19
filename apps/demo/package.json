@@ -7,11 +7,11 @@
   "//": "构建用 webpack 而不是 Turbopack：界面样式 web-workbench.css 第一行用 @import 加载 Google Fonts 远程样式表，Turbopack 会丢掉这条导入（实测），webpack 与原版的 Vite 一样原样保留。",
   "scripts": {
     "sync-fixtures": "tsx scripts/sync-fixtures.ts",
-    "dev": "tsx scripts/sync-fixtures.ts && next dev --webpack --port 4400",
-    "build": "tsx scripts/sync-fixtures.ts && next build --webpack",
+    "dev": "tsx scripts/sync-fixtures.ts && NEXT_TELEMETRY_DISABLED=1 next dev --webpack --port 4400",
+    "build": "tsx scripts/sync-fixtures.ts && NEXT_TELEMETRY_DISABLED=1 next build --webpack",
     "serve": "tsx scripts/serve-static.ts",
     "lint": "eslint .",
-    "typecheck": "next typegen && tsc -p tsconfig.json"
+    "typecheck": "NEXT_TELEMETRY_DISABLED=1 next typegen && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@mingxi/demo-data": "workspace:*",

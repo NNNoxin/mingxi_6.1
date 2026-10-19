@@ -111,7 +111,8 @@ export const emailOutbox = opsSchema.table(
   {
     id: id(),
     toAddress: citext("to_address").notNull(),
-    template: text("template", { enum: ["verify_email", "reset_password"] }).notNull(),
+    /** existing_account：有人用已注册的邮箱再次注册时通知邮箱主人（注册接口本身不透露邮箱是否已注册）。 */
+    template: text("template", { enum: ["verify_email", "reset_password", "existing_account"] }).notNull(),
     payload: jsonb("payload").notNull(),
     status: text("status", { enum: ["pending", "sending", "sent", "failed"] })
       .notNull()
@@ -126,7 +127,11 @@ export const emailOutbox = opsSchema.table(
     index("email_outbox_due_idx")
       .on(t.nextAttemptAt)
       .where(sql`status = 'pending'`),
-    check("email_outbox_template_check", sql`template IN ('verify_email', 'reset_password')`),
+    check(
+      "email_outbox_template_check",
+      sql`template IN ('verify_email', 'reset_password', 'existing_account')`,
+    ),
+    index("email_outbox_recipient_idx").on(t.toAddress, t.template, t.createdAt),
     check("email_outbox_status_check", sql`status IN ('pending', 'sending', 'sent', 'failed')`),
     check("email_outbox_sent_check", sql`(sent_at IS NOT NULL) = (status = 'sent')`),
     check("email_outbox_attempts_check", sql`attempts >= 0`),
