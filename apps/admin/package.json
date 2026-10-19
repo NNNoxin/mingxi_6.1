@@ -1,0 +1,35 @@
+{
+  "name": "@mingxi/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "运营后台（docs/05）：团队内部使用，与正式站不同源；界面按 D12 自建，标准后台风格",
+  "scripts": {
+    "dev": "NEXT_TELEMETRY_DISABLED=1 next dev --webpack --port 4402",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build --webpack",
+    "lint": "eslint .",
+    "typecheck": "NEXT_TELEMETRY_DISABLED=1 next typegen && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mingxi/contracts": "workspace:*",
+    "next": "16.4.2",
+    "qrcode": "1.5.4",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@mingxi/config": "workspace:*",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.20.5",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "10.13.0",
+    "tailwindcss": "4.2.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}

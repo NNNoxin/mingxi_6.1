@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* 运营后台的设计变量：信息密度高的标准后台风格，品牌色沿用工作台的玫瑰棕（--mwb-rose-deep）。
+   不加载任何远程字体或资源。 */
+@theme {
+  --color-canvas: #f6f5f2;
+  --color-panel: #ffffff;
+  --color-line: #e6e2da;
+  --color-line-strong: #d6d1c7;
+  --color-ink: #1c1a17;
+  --color-muted: #6f675c;
+  --color-accent: #b9735e;
+  --color-accent-soft: #f6e9e3;
+  --color-danger: #9b2c3a;
+  --color-danger-soft: #f6e3e5;
+  --color-ok: #2f7d57;
+  --color-ok-soft: #e4f1ea;
+  --color-warn: #8a5a28;
+  --color-warn-soft: #f8efe1;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", "Helvetica Neue",
+    sans-serif;
+  --font-brand: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}

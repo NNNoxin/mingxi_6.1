@@ -1,8 +1,10 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
+import { createServer as createHttpServer, type IncomingMessage, type Server } from "node:http";
 import { createServer, type AddressInfo } from "node:net";
-import { join, resolve } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { simpleParser } from "mailparser";
 import { SMTPServer } from "smtp-server";
 
@@ -12,6 +14,9 @@ import { SMTPServer } from "smtp-server";
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const SERVER_ENTRY = join(REPO_ROOT, "apps/server/dist/main.js");
 const WEB_ROOT = join(REPO_ROOT, "apps/web/out");
+const ADMIN_ROOT = join(REPO_ROOT, "apps/admin/out");
+/** 运营后台转发的接口，与线上 Pages Function 的转发范围一致（docs/02 §8.2）。 */
+const ADMIN_FORWARDED = ["/api/auth/", "/api/admin/"];
 
 export interface ReceivedMail {
   to: string;
@@ -21,6 +26,8 @@ export interface ReceivedMail {
 
 export interface Stack {
   baseUrl: string;
+  /** 运营后台的地址（只有 startStack({ admin: true }) 时有）。用 127.0.0.1 而不是 localhost：Cookie 不区分端口，主机名不同才能像线上那样与正式站隔离。 */
+  adminUrl: string | null;
   inbox: ReceivedMail[];
   /** 等待寄给 address、主题为 subject 的邮件（后台任务每 2 秒投递一次）。 */
   waitForMail: (address: string, subject: string) => Promise<ReceivedMail>;
@@ -92,17 +99,97 @@ async function waitUntilReady(baseUrl: string, server: ChildProcess, log: () => 
   throw new Error(`服务端 30 秒内没有就绪：\n${log()}`);
 }
 
-export async function startStack(): Promise<Stack> {
-  for (const [path, how] of [
+const TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+};
+
+async function readBody(request: IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks);
+}
+
+async function staticFile(root: string, pathname: string): Promise<{ path: string; found: boolean }> {
+  const base = join(root, normalize(decodeURIComponent(pathname)).replace(/^[/\\]+/, ""));
+  for (const candidate of [base, `${base}.html`, join(base, "index.html")]) {
+    if (candidate.startsWith(root) && (await stat(candidate).catch(() => null))?.isFile()) {
+      return { path: candidate, found: true };
+    }
+  }
+  return { path: join(root, "404.html"), found: false };
+}
+
+/**
+ * 模拟运营后台的线上托管：静态文件来自 apps/admin 的构建产物，只把 /api/auth/* 与 /api/admin/* 转发给服务端
+ * （线上由 Cloudflare Pages Function 完成）。
+ */
+async function startAdminSite(apiOrigin: string): Promise<{ url: string; server: Server }> {
+  const port = await freePort();
+  const url = `http://127.0.0.1:${String(port)}`;
+  const server = createHttpServer((request, response) => {
+    void (async () => {
+      const target = new URL(request.url ?? "/", url);
+      if (ADMIN_FORWARDED.some((prefix) => target.pathname.startsWith(prefix))) {
+        const headers = new Headers();
+        for (const [name, value] of Object.entries(request.headers)) {
+          if (typeof value === "string" && !["host", "connection", "content-length"].includes(name))
+            headers.set(name, value);
+        }
+        const body =
+          request.method === "GET" || request.method === "HEAD"
+            ? undefined
+            : new Uint8Array(await readBody(request));
+        const upstream = await fetch(`${apiOrigin}${target.pathname}${target.search}`, {
+          method: request.method,
+          headers,
+          body,
+          redirect: "manual",
+        });
+        upstream.headers.forEach((value, name) => {
+          if (!["set-cookie", "content-encoding", "content-length", "transfer-encoding"].includes(name)) {
+            response.setHeader(name, value);
+          }
+        });
+        response.setHeader("set-cookie", upstream.headers.getSetCookie());
+        response.statusCode = upstream.status;
+        response.end(Buffer.from(await upstream.arrayBuffer()));
+        return;
+      }
+      const file = await staticFile(ADMIN_ROOT, target.pathname);
+      response.statusCode = file.found ? 200 : 404;
+      response.setHeader("content-type", TYPES[extname(file.path)] ?? "application/octet-stream");
+      response.end(await readFile(file.path));
+    })().catch((error: unknown) => {
+      response.statusCode = 502;
+      response.end(String(error));
+    });
+  });
+  await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
+  return { url, server };
+}
+
+export async function startStack(options: { admin?: boolean } = {}): Promise<Stack> {
+  const required: [string, string][] = [
     [SERVER_ENTRY, "pnpm --filter @mingxi/server build"],
     [join(WEB_ROOT, "404.html"), "pnpm --filter @mingxi/web build"],
-  ] as const) {
+  ];
+  if (options.admin) required.push([join(ADMIN_ROOT, "404.html"), "pnpm --filter @mingxi/admin build"]);
+  for (const [path, how] of required) {
     if (!existsSync(path)) throw new Error(`缺少构建产物 ${path}，先运行 ${how}`);
   }
   const inbox: ReceivedMail[] = [];
   const smtp = await startSmtp(inbox);
   const port = await freePort();
   const baseUrl = `http://localhost:${String(port)}`;
+  // 后台地址要在服务端启动前确定（服务端据此信任它的来源），转发目标就是下面启动的服务端。
+  const admin = options.admin ? await startAdminSite(baseUrl) : null;
   let output = "";
   // 只传服务端需要的变量，不把本机 .env 或其他密钥带进子进程。
   const server = spawn(process.execPath, [SERVER_ENTRY], {
@@ -122,6 +209,9 @@ export async function startStack(): Promise<Stack> {
       MAIL_TRANSPORT: "smtp",
       SMTP_URL: `smtp://127.0.0.1:${String(smtp.port)}`,
       MAIL_FROM: "明晰 <no-reply@e2e.local>",
+      ...(admin
+        ? { MINGXI_ADMIN_URL: admin.url, ADMIN_DATABASE_URL: requireEnv("TEST_ADMIN_DATABASE_URL") }
+        : {}),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -135,6 +225,7 @@ export async function startStack(): Promise<Stack> {
 
   return {
     baseUrl,
+    adminUrl: admin?.url ?? null,
     inbox,
     serverLog,
     waitForMail: async (address, subject) => {
@@ -153,6 +244,12 @@ export async function startStack(): Promise<Stack> {
         await exited;
       }
       await smtp.close();
+      if (admin)
+        await new Promise<void>((done) =>
+          admin.server.close(() => {
+            done();
+          }),
+        );
     },
   };
 }

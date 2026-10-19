@@ -1,0 +1,10 @@
+# Cloudflare Pages 的响应头配置（D11，docs/02 §8.2）：构建时原样复制到 out/_headers。
+# 后台页面能执行冻结账号等写操作，禁止被其他网站嵌入（点击劫持），不让搜索引擎收录，不把后台地址带给外链。
+# 内容安全策略（CSP）随 P9 安全审查统一配置（docs/06 第 10 条）。
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
