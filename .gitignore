@@ -3,6 +3,8 @@ node_modules/
 dist/
 .next/
 out/
+# 运营后台演示版的构建产物（apps/admin build:demo）
+out-demo/
 .turbo/
 coverage/
 *.tsbuildinfo

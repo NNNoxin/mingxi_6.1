@@ -18,6 +18,10 @@
       "env": ["MINGXI_PUBLIC_URL"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "out/**"]
     },
+    "build:demo": {
+      "dependsOn": ["^build", "build"],
+      "outputs": ["out-demo/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

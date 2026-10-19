@@ -1,4 +1,6 @@
-// 后台登录用的认证接口（/api/auth/*，经后台站点的转发到达服务端）。
+import { transport } from "@admin/transport";
+
+// 后台登录用的认证接口（/api/auth/*，经后台站点的转发到达服务端；演示版由页面内的演示服务处理）。
 
 export type AuthOutcome =
   | { ok: true; twoFactorRedirect: boolean }
@@ -13,7 +15,7 @@ export type AuthOutcome =
 async function post(path: string, body: Record<string, unknown>): Promise<AuthOutcome> {
   let response: Response;
   try {
-    response = await fetch(`/api/auth${path}`, {
+    response = await transport.send(`/api/auth${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
@@ -48,12 +50,14 @@ export const signOut = () => post("/sign-out", {});
 export async function enableTwoFactor(
   password: string,
 ): Promise<{ ok: true; totpURI: string; backupCodes: string[] } | Extract<AuthOutcome, { ok: false }>> {
-  const response = await fetch("/api/auth/two-factor/enable", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify({ password }),
-  }).catch(() => null);
+  const response = await transport
+    .send("/api/auth/two-factor/enable", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ password }),
+    })
+    .catch(() => null);
   if (!response) return { ok: false, status: 0, code: "network", message: null, retryAfterSeconds: null };
   const body = (await response.json().catch(() => null)) as {
     totpURI?: unknown;
@@ -79,7 +83,10 @@ export async function enableTwoFactor(
 
 /** 当前浏览器的登录状态（用于区分“没开两步验证”与“本次登录没经过两步验证”）。 */
 export async function currentAccount(): Promise<{ email: string; twoFactorEnabled: boolean } | null> {
-  const response = await fetch("/api/auth/get-session", { credentials: "same-origin", cache: "no-store" });
+  const response = await transport.send("/api/auth/get-session", {
+    credentials: "same-origin",
+    cache: "no-store",
+  });
   if (!response.ok) throw new Error(`读取登录状态失败（HTTP ${String(response.status)}）`);
   const body = (await response.json()) as { user?: { email?: unknown; twoFactorEnabled?: unknown } } | null;
   if (typeof body?.user?.email !== "string") return null;

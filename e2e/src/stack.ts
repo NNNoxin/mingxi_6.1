@@ -15,6 +15,7 @@ const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const SERVER_ENTRY = join(REPO_ROOT, "apps/server/dist/main.js");
 const WEB_ROOT = join(REPO_ROOT, "apps/web/out");
 const ADMIN_ROOT = join(REPO_ROOT, "apps/admin/out");
+export const ADMIN_DEMO_ROOT = join(REPO_ROOT, "apps/admin/out-demo");
 /** 运营后台转发的接口，与线上 Pages Function 的转发范围一致（docs/02 §8.2）。 */
 const ADMIN_FORWARDED = ["/api/auth/", "/api/admin/"];
 
@@ -173,6 +174,53 @@ async function startAdminSite(apiOrigin: string): Promise<{ url: string; server:
   });
   await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
   return { url, server };
+}
+
+export interface StaticSite {
+  url: string;
+  /** 收到的 /api/ 请求（纯静态站没有转发，这类请求一律 404 并记在这里）。 */
+  apiHits: string[];
+  stop: () => Promise<void>;
+}
+
+/**
+ * 纯静态站（后台演示版的线上托管方式：没有 Pages Function，连不到后端）。
+ * 只提供 root 下的文件；任何 /api/ 请求都返回 404，并记下来供测试断言。
+ */
+export async function startStaticSite(root: string, build: string): Promise<StaticSite> {
+  if (!existsSync(join(root, "404.html"))) throw new Error(`缺少构建产物 ${root}，先运行 ${build}`);
+  const port = await freePort();
+  const url = `http://127.0.0.1:${String(port)}`;
+  const apiHits: string[] = [];
+  const server = createHttpServer((request, response) => {
+    void (async () => {
+      const target = new URL(request.url ?? "/", url);
+      if (target.pathname.startsWith("/api/")) {
+        apiHits.push(`${request.method ?? "GET"} ${target.pathname}`);
+        response.statusCode = 404;
+        response.end();
+        return;
+      }
+      const file = await staticFile(root, target.pathname);
+      response.statusCode = file.found ? 200 : 404;
+      response.setHeader("content-type", TYPES[extname(file.path)] ?? "application/octet-stream");
+      response.end(await readFile(file.path));
+    })().catch((error: unknown) => {
+      response.statusCode = 500;
+      response.end(String(error));
+    });
+  });
+  await new Promise<void>((done) => server.listen(port, "127.0.0.1", done));
+  return {
+    url,
+    apiHits,
+    stop: () =>
+      new Promise<void>((done) => {
+        server.close(() => {
+          done();
+        });
+      }),
+  };
 }
 
 export async function startStack(options: { admin?: boolean } = {}): Promise<Stack> {

@@ -1,3 +1,4 @@
+import { transport } from "@admin/transport";
 import { AdminDenialReason, ApiErrorBody } from "@mingxi/contracts";
 import type { z } from "zod";
 
@@ -31,7 +32,11 @@ async function request<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   let response: Response;
   try {
-    response = await fetch(`/api/admin${path}`, { credentials: "same-origin", cache: "no-store", ...init });
+    response = await transport.send(`/api/admin${path}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+      ...init,
+    });
   } catch {
     throw new AdminApiError({
       status: 0,

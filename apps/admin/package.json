@@ -6,7 +6,9 @@
   "description": "运营后台（docs/05）：团队内部使用，与正式站不同源；界面按 D12 自建，标准后台风格",
   "scripts": {
     "dev": "NEXT_TELEMETRY_DISABLED=1 next dev --webpack --port 4402",
+    "dev:demo": "MINGXI_ADMIN_MODE=demo NEXT_TELEMETRY_DISABLED=1 next dev --webpack --port 4403",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build --webpack",
+    "build:demo": "MINGXI_ADMIN_MODE=demo NEXT_TELEMETRY_DISABLED=1 next build --webpack",
     "lint": "eslint .",
     "typecheck": "NEXT_TELEMETRY_DISABLED=1 next typegen && tsc -p tsconfig.json",
     "test": "vitest run"
