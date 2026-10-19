@@ -75,13 +75,24 @@ jobs:
         working-directory: e2e
         run: |
           pids=()
+          logs=()
           for i in 1 2 3; do
-            pnpm capture --base http://localhost:4319 --out ".artifacts/base-$i" > "$RUNNER_TEMP/capture-base-$i.log" 2>&1 & pids+=($!)
+            logs+=("$RUNNER_TEMP/capture-base-$i.log")
+            pnpm capture --base http://localhost:4319 --out ".artifacts/base-$i" > "${logs[-1]}" 2>&1 & pids+=($!)
           done
-          pnpm capture --base http://localhost:4400 --out .artifacts/candidate > "$RUNNER_TEMP/capture-candidate.log" 2>&1 & pids+=($!)
+          logs+=("$RUNNER_TEMP/capture-candidate.log")
+          pnpm capture --base http://localhost:4400 --out .artifacts/candidate > "${logs[-1]}" 2>&1 & pids+=($!)
           status=0
-          for pid in "${pids[@]}"; do wait "$pid" || status=1; done
-          tail -n 3 "$RUNNER_TEMP"/capture-*.log
+          for index in "${!pids[@]}"; do
+            if wait "${pids[$index]}"; then
+              tail -n 3 "${logs[$index]}"
+            else
+              # 失败的捕获打印末尾 80 行（错误堆栈在这里），只看最后几行只能看到退出码。
+              status=1
+              echo "==== 捕获失败：${logs[$index]} ===="
+              tail -n 80 "${logs[$index]}"
+            fi
+          done
           exit "$status"
 
       - name: 对比
