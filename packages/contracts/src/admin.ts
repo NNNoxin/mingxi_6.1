@@ -151,3 +151,11 @@ export type RoleChangeBody = z.infer<typeof RoleChangeBody>;
 
 export const AdminActionResult = z.object({ ok: z.literal(true) });
 export type AdminActionResult = z.infer<typeof AdminActionResult>;
+
+/** 撤销全部工作人员会话的结果（EC-A1）：撤销了多少个会话、涉及多少个工作人员账号。 */
+export const StaffSessionsRevoked = z.object({
+  ok: z.literal(true),
+  revokedSessions: z.number().int().nonnegative(),
+  staffAccounts: z.number().int().nonnegative(),
+});
+export type StaffSessionsRevoked = z.infer<typeof StaffSessionsRevoked>;

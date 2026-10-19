@@ -10,6 +10,7 @@ import {
   RoleChangeBody,
   StaffList,
   StaffMe,
+  StaffSessionsRevoked,
   type AdminActionResult,
 } from "@mingxi/contracts";
 import type { Pool } from "@mingxi/db";
@@ -63,6 +64,7 @@ export function adminRoutes(deps: AdminDeps) {
 
   const actor = (c: Context<AdminEnv>): Actor => ({
     userId: c.var.user.id,
+    sessionId: c.var.staff.session.sessionId,
     requestId: c.var.requestId,
     ipHash: hashClientIp(
       deps.ipHashSecret,
@@ -164,6 +166,12 @@ export function adminRoutes(deps: AdminDeps) {
     const input = await body(c, RoleChangeBody);
     await deps.actions.changeStaffRole(actor(c), input);
     return c.json(done);
+  });
+
+  app.post("/staff/revoke-sessions", requirePermission("staff.manage", { write: true }), async (c) => {
+    const { reason } = await body(c, ReasonBody);
+    const result = await deps.actions.revokeAllStaffSessions(actor(c), reason);
+    return c.json(StaffSessionsRevoked.parse({ ok: true, ...result }));
   });
 
   app.all("*", () => {

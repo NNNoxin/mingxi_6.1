@@ -185,6 +185,18 @@ describe("运营后台", () => {
     await shot("09-工作人员");
   });
 
+  it("撤销全部工作人员会话：执行者当前这次登录保留（EC-A1）", async () => {
+    await page.getByRole("button", { name: "撤销全部工作人员会话" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("原因（写入审计日志）").fill("演练：怀疑有工作人员账号被盗");
+    await dialog.getByRole("button", { name: "确认撤销全部会话" }).click();
+    await page.getByRole("status").filter({ hasText: "你当前这次登录保留" }).waitFor();
+    await shot("10-撤销全部工作人员会话");
+    // 重新加载会重新检查登录状态：当前会话仍然有效。
+    await page.reload();
+    await page.getByRole("heading", { name: "工作人员", exact: true }).waitFor();
+  });
+
   it("退出失败时留在原页并说明原因，不假装已经退出", async () => {
     await page.route("**/api/auth/sign-out", (route) => route.fulfill({ status: 503, body: "" }));
     await page.getByRole("button", { name: "退出" }).click();
@@ -200,7 +212,7 @@ describe("运营后台", () => {
     await page.getByLabel("密码").fill(PASSWORD);
     await page.getByRole("button", { name: "登录", exact: true }).click();
     await page.getByLabel("验证码").waitFor();
-    await shot("10-输入验证码");
+    await shot("11-输入验证码");
     await page.getByLabel("验证码").fill(totpCode(totpSecret));
     await page.getByRole("button", { name: "验证" }).click();
     await page.getByRole("heading", { name: "用户", exact: true }).waitFor();

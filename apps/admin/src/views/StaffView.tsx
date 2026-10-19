@@ -1,8 +1,15 @@
 "use client";
 
-import { AdminActionResult, StaffList, type AdminUserSummary, type UserRole } from "@mingxi/contracts";
+import {
+  AdminActionResult,
+  StaffList,
+  StaffSessionsRevoked,
+  type AdminUserSummary,
+  type UserRole,
+} from "@mingxi/contracts";
 import { useCallback, useEffect, useState, type SubmitEvent } from "react";
 import { AdminApiError, adminGet, adminPost } from "../api";
+import { ReasonDialog } from "../components/ReasonDialog";
 import { Badge, Banner, Button, Cell, PageHeader, Panel, Select, Table, TextInput } from "../components/ui";
 import { formatTime, ROLE_LABELS } from "../format";
 import { SignOutButton } from "../staff-context";
@@ -18,6 +25,7 @@ export function StaffView() {
     reason: "",
   });
   const [busy, setBusy] = useState(false);
+  const [confirmingRevokeAll, setConfirmingRevokeAll] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<AdminApiError | Error | null>(null);
 
@@ -58,11 +66,41 @@ export function StaffView() {
     }
   }
 
+  /** 撤销全部工作人员会话（EC-A1）。需要重新登录时关闭确认框、在页面上给出入口；其他失败显示在确认框里。 */
+  async function revokeAll(reason: string) {
+    setNotice(null);
+    setError(null);
+    let result: StaffSessionsRevoked;
+    try {
+      result = await adminPost("/staff/revoke-sessions", { reason }, StaffSessionsRevoked);
+    } catch (failure) {
+      if (failure instanceof AdminApiError && failure.reason === "reauth_required") {
+        setError(failure);
+        return;
+      }
+      throw failure;
+    }
+    setNotice(
+      `已撤销 ${String(result.revokedSessions)} 个会话（共 ${String(result.staffAccounts)} 个工作人员账号），你当前这次登录保留（已写入审计日志）`,
+    );
+    await load();
+  }
+
   return (
     <>
       <PageHeader
         title="工作人员"
         description="后台账号与角色。所有工作人员都必须开启两步验证；至少保留一位开启两步验证的管理员。"
+        actions={
+          <Button
+            tone="danger"
+            onClick={() => {
+              setConfirmingRevokeAll(true);
+            }}
+          >
+            撤销全部工作人员会话
+          </Button>
+        }
       />
       <div className="space-y-3">
         {notice ? <Banner tone="success">{notice}</Banner> : null}
@@ -147,6 +185,18 @@ export function StaffView() {
           </Table>
         </Panel>
       </div>
+      {confirmingRevokeAll ? (
+        <ReasonDialog
+          title="撤销全部工作人员会话"
+          description="除你当前这次登录外，所有工作人员（包括你在其他设备上的登录）立即退出，需要重新用密码和验证码登录。用于怀疑有工作人员账号被盗时。"
+          confirmLabel="确认撤销全部会话"
+          danger
+          onConfirm={revokeAll}
+          onClose={() => {
+            setConfirmingRevokeAll(false);
+          }}
+        />
+      ) : null}
     </>
   );
 }

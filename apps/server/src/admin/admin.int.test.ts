@@ -5,6 +5,7 @@ import {
   AuditPage,
   OutboxPage,
   StaffMe,
+  StaffSessionsRevoked,
   type StaffRole,
 } from "@mingxi/contracts";
 import type { IntegrationDatabase } from "@mingxi/db/testing";
@@ -63,7 +64,7 @@ async function staff(role: StaffRole, options: { twoFactor?: boolean } = {}) {
     const verified = await admin.call("/two-factor/verify-totp", { body: { code: totpFromUri(totpURI) } });
     expect(verified.status, JSON.stringify(verified.json)).toBe(200);
   }
-  return { email, admin, userId: await userIdOf(email) };
+  return { email, admin, totpURI, userId: await userIdOf(email) };
 }
 
 async function auditRows(targetId: string, action: string) {
@@ -306,5 +307,49 @@ describe("审计、发件箱与工作人员", () => {
     const self = StaffMe.parse((await admin.admin("/me")).json);
     const demote = await admin.admin("/staff", { body: { email: self.email, role: "user", reason: "测试" } });
     expect(demote.status).toBe(409);
+  });
+
+  it("撤销全部工作人员会话：只保留执行者当前这次登录，普通用户不受影响，写审计（EC-A1）", async () => {
+    const { admin, email, totpURI, userId } = await staff("admin");
+    // 同一位管理员在另一台设备上的登录（被盗的可能正是这一份）。
+    const otherLaptop = new Device({ origin: ADMIN_URL });
+    await otherLaptop.call("/sign-in/email", { body: { email, password: PASSWORD } });
+    await otherLaptop.call("/two-factor/verify-totp", { body: { code: totpFromUri(totpURI ?? "") } });
+    const support = await staff("support");
+    const reader = await registerAndVerify();
+    expect((await otherLaptop.admin("/me")).status).toBe(200);
+    expect((await support.admin.admin("/me")).status).toBe(200);
+
+    const denied = await support.admin.admin("/staff/revoke-sessions", { body: { reason: "客服尝试" } });
+    expect(denied.status).toBe(403);
+    expect(reason(denied)).toBe("permission_denied");
+
+    const response = await admin.admin("/staff/revoke-sessions", {
+      body: { reason: "怀疑有工作人员账号被盗" },
+    });
+    expect(response.status, JSON.stringify(response.json)).toBe(200);
+    const result = StaffSessionsRevoked.parse(response.json);
+    expect(result.revokedSessions).toBeGreaterThanOrEqual(2);
+
+    expect((await admin.admin("/me")).status).toBe(200);
+    expect((await otherLaptop.admin("/me")).status).toBe(401);
+    expect((await support.admin.admin("/me")).status).toBe(401);
+    expect((await reader.device.api("/me")).status).toBe(200);
+    const { rows: remaining } = await db.ownerPool.query<{ user_id: string }>(
+      "SELECT s.user_id FROM auth.sessions s JOIN auth.users u ON u.id = s.user_id WHERE u.role <> 'user'",
+    );
+    expect(remaining.map((row) => row.user_id)).toEqual([userId]);
+
+    const { rows: audits } = await db.ownerPool.query<{ target_id: string | null; metadata: object }>(
+      "SELECT target_id, metadata FROM ops.audit_log WHERE action = 'admin.staff_sessions_revoked' AND actor_user_id = $1",
+      [userId],
+    );
+    expect(audits).toHaveLength(1);
+    expect(audits[0]?.target_id).toBeNull();
+    expect(audits[0]?.metadata).toMatchObject({
+      reason: "怀疑有工作人员账号被盗",
+      revokedSessions: result.revokedSessions,
+      staffAccounts: result.staffAccounts,
+    });
   });
 });

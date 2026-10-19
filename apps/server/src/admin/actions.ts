@@ -14,6 +14,8 @@ export interface AdminAuthActions {
 
 export interface Actor {
   userId: string;
+  /** 执行者当前这次登录的会话（撤销全部工作人员会话时保留它）。 */
+  sessionId: string;
   ipHash: string | null;
   requestId: string;
 }
@@ -58,19 +60,21 @@ async function lockTarget(client: PoolClient, userId: string): Promise<TargetRow
   return row;
 }
 
+/** targetId 为 null 表示不针对单个用户的操作（例如撤销全部工作人员会话）。 */
 async function audit(
   client: PoolClient,
   actor: Actor,
   action: string,
-  targetId: string,
+  targetId: string | null,
   metadata: Record<string, unknown>,
 ): Promise<void> {
   await client.query(
     `INSERT INTO ops.audit_log (actor_user_id, action, target_type, target_id, metadata, ip_hash)
-     VALUES ($1, $2, 'user', $3, $4, $5)`,
+     VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       actor.userId,
       action,
+      targetId ? "user" : null,
       targetId,
       JSON.stringify({ ...metadata, requestId: actor.requestId }),
       actor.ipHash,
@@ -136,6 +140,24 @@ export function adminActions(pool: Pool, authActions: AdminAuthActions) {
         if (target.status !== "active") throw new AppError("conflict", "账号已冻结，不能重置密码");
         await audit(client, actor, "admin.password_reset_sent", userId, { reason });
         await authActions.sendPasswordReset(target.email);
+      }),
+
+    /**
+     * 撤销全部工作人员会话（EC-A1：怀疑有工作人员账号被盗时止损）。只保留执行者当前这次登录；
+     * 执行者自己在其他设备上的登录也一并撤销——被盗的可能正是执行者的账号。
+     */
+    revokeAllStaffSessions: (actor: Actor, reason: string) =>
+      inTransaction(pool, async (client) => {
+        // 锁住全部工作人员行：与授予 / 撤销角色并发时，后到的一方看到最新的工作人员名单。
+        const staff = await client.query("SELECT id FROM auth.users WHERE role <> 'user' FOR UPDATE");
+        const deleted = await client.query(
+          `DELETE FROM auth.sessions s USING auth.users u
+            WHERE s.user_id = u.id AND u.role <> 'user' AND s.id <> $1`,
+          [actor.sessionId],
+        );
+        const result = { revokedSessions: deleted.rowCount ?? 0, staffAccounts: staff.rowCount ?? 0 };
+        await audit(client, actor, "admin.staff_sessions_revoked", null, { reason, ...result });
+        return result;
       }),
 
     /** 修改工作人员角色（规则见 staff/roles.ts：账号须已验证；至少保留一个开启两步验证的管理员）。 */

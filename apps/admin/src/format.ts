@@ -50,6 +50,7 @@ const ACTION_LABELS: Record<string, string> = {
   "admin.sessions_revoked": "退出所有设备",
   "admin.verification_resent": "重发验证邮件",
   "admin.password_reset_sent": "发送重置密码邮件",
+  "admin.staff_sessions_revoked": "撤销全部工作人员会话",
   "staff.role_changed": "修改工作人员角色",
 };
 
