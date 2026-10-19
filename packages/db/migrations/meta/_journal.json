@@ -36,6 +36,20 @@
       "when": 1792381299078,
       "tag": "0004_existing_account_email",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792409005559,
+      "tag": "0005_staff_two_factor",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792409107033,
+      "tag": "0006_admin_read_role",
+      "breakpoints": true
     }
   ]
 }

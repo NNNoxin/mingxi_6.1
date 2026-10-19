@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountUnavailableError, assertAccountActive } from "./accounts";
 import { commitCanvasRevision, StaleCanvasRevisionError } from "./canvas";
 import type { Pool, PoolClient } from "./pool";
-import { inspectCurrentRole } from "./runtime-role";
+import { inspectCurrentRole } from "./db-roles";
 import { prepareIntegrationDatabase, type IntegrationDatabase } from "./testing";
 import { withUserTransaction } from "./user-context";
 
@@ -72,7 +72,12 @@ afterAll(async () => {
 describe("运行时账号", () => {
   it("不是超级用户、不带 BYPASSRLS，并继承 mingxi_runtime", async () => {
     const info = await inspectCurrentRole(app);
-    expect(info).toMatchObject({ superuser: false, bypassRls: false, inheritsRuntimeGroup: true });
+    expect(info).toMatchObject({
+      superuser: false,
+      bypassRls: false,
+      inheritsRuntimeGroup: true,
+      inheritsAdminGroup: false,
+    });
   });
 });
 

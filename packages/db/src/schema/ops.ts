@@ -6,7 +6,7 @@ import { citext, createdAt, id, ownerIsolation, timestamptz } from "./common";
 /** 套餐、用量、审计、发件箱（docs/02 §4.5、§3）。 */
 export const opsSchema = pgSchema("ops");
 
-/** 套餐定义（公开配置，不含用户数据）；初始数据在迁移 0003。 */
+/** 套餐定义（公开配置，不含用户数据）。具体套餐与额度在 P9“配额与套餐”定下后由迁移写入，目前为空表。 */
 export const plans = opsSchema.table(
   "plans",
   {

@@ -34,6 +34,7 @@ jobs:
       # 表 owner（服务容器的超级用户）只用于迁移；测试准备阶段据此创建受行级隔离约束的运行时账号。
       TEST_DATABASE_URL: postgresql://mingxi:mingxi_ci_only@127.0.0.1:5432/mingxi_test
       TEST_APP_DATABASE_URL: postgresql://mingxi_app:mingxi_app_ci_only@127.0.0.1:5432/mingxi_test
+      TEST_ADMIN_DATABASE_URL: postgresql://mingxi_admin_app:mingxi_admin_app_ci_only@127.0.0.1:5432/mingxi_test
       TEST_REDIS_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v5

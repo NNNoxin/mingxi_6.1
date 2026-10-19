@@ -1,13 +1,14 @@
-import type { PoolClient } from "@mingxi/db";
+import type { PoolClient, schema } from "@mingxi/db";
 
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
   emailVerified: boolean;
-  role: "user" | "admin" | "support";
+  /** user 为普通用户，其余为工作人员（docs/05 §5）。 */
+  role: (typeof schema.USER_ROLES)[number];
   /** frozen：已申请删除账号，所有业务接口拒绝访问（EC-U4）。 */
-  status: "active" | "frozen";
+  status: (typeof schema.USER_STATUSES)[number];
 }
 
 export interface SessionLookup {
