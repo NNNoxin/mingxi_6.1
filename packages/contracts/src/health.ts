@@ -8,12 +8,17 @@ export const LivenessResponse = z.object({
 });
 export type LivenessResponse = z.infer<typeof LivenessResponse>;
 
-export const DependencyCheck = z.object({
-  name: z.enum(["postgres", "redis"]),
-  ok: z.boolean(),
-  latencyMs: z.number().nonnegative(),
-  error: z.string().optional(),
-});
+/**
+ * 单个依赖的检查结果。就绪检查对公网开放，失败原因（可能含数据库主机名、内网地址）只写服务端日志，
+ * 不出现在响应里。
+ */
+export const DependencyCheck = z
+  .object({
+    name: z.enum(["postgres", "redis"]),
+    ok: z.boolean(),
+    latencyMs: z.number().nonnegative(),
+  })
+  .strict();
 export type DependencyCheck = z.infer<typeof DependencyCheck>;
 
 /** 就绪检查：依赖全部可用才返回 ready（供部署平台判断能否接流量）。 */

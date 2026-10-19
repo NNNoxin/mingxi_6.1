@@ -53,6 +53,23 @@ function signedIn(name: "reader" | "other" | "frozen", init: RequestInit = {}): 
   return { ...init, headers: { cookie: `session=${name}`, ...(init.headers as Record<string, string>) } };
 }
 
+/** 把日志写进内存，检查实际输出的内容。 */
+function capture() {
+  const lines: Record<string, unknown>[] = [];
+  const destination = new Writable({
+    write(chunk: Buffer, _encoding, callback) {
+      for (const line of chunk.toString("utf8").split("\n")) {
+        if (line) lines.push(JSON.parse(line) as Record<string, unknown>);
+      }
+      callback();
+    },
+  });
+  return {
+    lines,
+    logger: createLogger({ LOG_LEVEL: "info", NODE_ENV: "test", MINGXI_VERSION: "test" }, destination),
+  };
+}
+
 describe("健康检查", () => {
   it("存活检查不依赖外部服务", async () => {
     const response = await appWith({ probes: probes({ postgres: false, redis: false }) }).request(
@@ -70,24 +87,33 @@ describe("健康检查", () => {
     expect(body.checks.map((check) => check.name).sort()).toEqual(["postgres", "redis"]);
   });
 
-  it("任一依赖不可用时返回 503，并指出是哪一个", async () => {
-    const response = await appWith({ probes: probes({ postgres: true, redis: false }) }).request(
+  it("任一依赖不可用时返回 503 并指出是哪一个；失败原因只写日志，不对外返回", async () => {
+    const { lines, logger } = capture();
+    const response = await appWith({ logger, probes: probes({ postgres: true, redis: false }) }).request(
       "/api/ready",
     );
     expect(response.status).toBe(503);
-    const body = ReadinessResponse.parse(await response.json());
+    const text = await response.text();
+    expect(text).not.toContain("ECONNREFUSED");
+    const body = ReadinessResponse.parse(JSON.parse(text));
     expect(body.status).toBe("unavailable");
-    const redis = body.checks.find((check) => check.name === "redis");
-    expect(redis?.ok).toBe(false);
-    expect(redis?.error).toContain("ECONNREFUSED");
+    expect(body.checks.find((check) => check.name === "redis")?.ok).toBe(false);
+    expect(lines.find((line) => line.msg === "依赖不可用")).toMatchObject({
+      dependency: "redis",
+      error: "ECONNREFUSED",
+    });
   });
 
   it("探针超时视为不可用", async () => {
-    const app = appWith({ probes: [{ name: "postgres", probe: () => new Promise(() => undefined) }] });
+    const { lines, logger } = capture();
+    const app = appWith({
+      logger,
+      probes: [{ name: "postgres", probe: () => new Promise(() => undefined) }],
+    });
     const response = await app.request("/api/ready");
     expect(response.status).toBe(503);
-    const body = ReadinessResponse.parse(await response.json());
-    expect(body.checks[0]?.error).toContain("未响应");
+    expect(ReadinessResponse.parse(await response.json()).checks[0]?.ok).toBe(false);
+    expect(String(lines.find((line) => line.msg === "依赖不可用")?.error)).toContain("未响应");
   }, 5_000);
 });
 
@@ -411,22 +437,6 @@ describe("幂等键", () => {
 });
 
 describe("请求日志", () => {
-  function capture() {
-    const lines: Record<string, unknown>[] = [];
-    const destination = new Writable({
-      write(chunk: Buffer, _encoding, callback) {
-        for (const line of chunk.toString("utf8").split("\n")) {
-          if (line) lines.push(JSON.parse(line) as Record<string, unknown>);
-        }
-        callback();
-      },
-    });
-    return {
-      lines,
-      logger: createLogger({ LOG_LEVEL: "info", NODE_ENV: "test", MINGXI_VERSION: "test" }, destination),
-    };
-  }
-
   it("记录方法、路径、状态与 userId，不记录 Cookie 与请求体", async () => {
     const { lines, logger } = capture();
     const app = appWith({ logger, auth: fakeAuth({ reader }).port });
