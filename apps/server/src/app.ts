@@ -15,6 +15,7 @@ import type { Logger } from "./logger";
 import type { RateLimiter, RateLimitRule } from "./rate-limit";
 import { healthRoutes, type DependencyProbe } from "./routes/health";
 import { meRoutes } from "./routes/me";
+import { staticSite } from "./web/static-site";
 
 export interface AppEnv {
   Variables: {
@@ -42,6 +43,8 @@ export interface AppOptions {
   apiRateLimit?: RateLimitRule;
   /** 单个请求体上限（字节）。文件上传走对象存储预签名直传，不经过这里。 */
   maxBodyBytes?: number;
+  /** web 角色：正式站静态产物目录（MINGXI_WEB_ROOT）。不提供时本进程只提供 /api。 */
+  webRoot?: string;
 }
 
 const DEFAULT_MAX_BODY_BYTES = 1024 * 1024;
@@ -111,6 +114,9 @@ export function createApp(options: AppOptions) {
   );
   api.route("/", meRoutes());
   app.route("/api", api);
+
+  // —— 正式站网页（web 角色）：/api 以外的 GET 请求返回静态产物，与 /api 同源。——
+  if (options.webRoot) app.get("*", staticSite(options.webRoot));
 
   app.notFound((c) => c.json(errorBody("not_found", "接口不存在", c.var.requestId), status("not_found")));
 

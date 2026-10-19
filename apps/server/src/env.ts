@@ -2,9 +2,9 @@ import { z } from "zod";
 
 /**
  * 进程角色：同一镜像按需在本进程启用哪些职责（docs/02 §8.1）。
- * api：HTTP 接口；worker：后台任务（当前为发件箱投递）。web（托管正式站静态产物）随 P3 步骤 4 / P4 加入。
+ * api：HTTP 接口；worker：后台任务（当前为发件箱投递）；web：托管正式站静态产物（与 /api 同源）。
  */
-export const ProcessRole = z.enum(["api", "worker"]);
+export const ProcessRole = z.enum(["api", "worker", "web"]);
 export type ProcessRole = z.infer<typeof ProcessRole>;
 
 /** 空字符串视为未填写（`.env` 里常见 `KEY=` 这种占位写法）。 */
@@ -51,6 +51,8 @@ const ServerEnv = z
     SMTP_URL: z.preprocess(blankAsUndefined, z.url({ protocol: /^smtps?$/ }).optional()),
     /** 发件人，例如 `明晰 <no-reply@example.com>`。 */
     MAIL_FROM: z.string().min(3),
+    /** web 角色托管的正式站静态产物目录（apps/web 的 next build 输出 out/）。 */
+    MINGXI_WEB_ROOT: z.preprocess(blankAsUndefined, z.string().optional()),
     GITHUB_CLIENT_ID: optionalSecret,
     GITHUB_CLIENT_SECRET: optionalSecret,
     GOOGLE_CLIENT_ID: optionalSecret,
@@ -62,6 +64,13 @@ const ServerEnv = z
         code: "custom",
         path: ["SMTP_URL"],
         message: "MAIL_TRANSPORT=smtp 时必须提供 SMTP_URL",
+      });
+    }
+    if (env.MINGXI_PROCESS_ROLES.includes("web") && !env.MINGXI_WEB_ROOT) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["MINGXI_WEB_ROOT"],
+        message: "启用 web 角色时必须提供正式站静态产物目录",
       });
     }
     if (env.MAIL_TRANSPORT === "log" && env.NODE_ENV === "production") {

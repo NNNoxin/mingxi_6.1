@@ -42,7 +42,14 @@ describe("环境变量校验", () => {
       "api",
       "worker",
     ]);
-    expect(() => loadEnv({ ...valid, MINGXI_PROCESS_ROLES: "api,web" })).toThrow(EnvError);
+    expect(() => loadEnv({ ...valid, MINGXI_PROCESS_ROLES: "api,admin" })).toThrow(EnvError);
+  });
+
+  it("启用 web 角色必须提供静态产物目录", () => {
+    expect(() => loadEnv({ ...valid, MINGXI_PROCESS_ROLES: "api,web" })).toThrow(/MINGXI_WEB_ROOT/);
+    expect(
+      loadEnv({ ...valid, MINGXI_PROCESS_ROLES: "api,web", MINGXI_WEB_ROOT: "/srv/web" }).MINGXI_WEB_ROOT,
+    ).toBe("/srv/web");
   });
 
   it("认证密钥至少 32 个字符", () => {

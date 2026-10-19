@@ -45,6 +45,7 @@ const app = createApp({
   rateLimiter,
   idempotencyStore: createRedisIdempotencyStore(runtime.redis),
   withUserTransaction: (userId) => (work) => withUserTransaction(runtime.pool, userId, work),
+  ...(env.MINGXI_PROCESS_ROLES.includes("web") ? { webRoot: env.MINGXI_WEB_ROOT } : {}),
 });
 
 const stopDispatcher = env.MINGXI_PROCESS_ROLES.includes("worker")
